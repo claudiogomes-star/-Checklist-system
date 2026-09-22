@@ -1,0 +1,38 @@
+===============================================================
+               PATBO — SISTEMA DE AVIAMENTOS
+        VERSÃO STANDALONE (100% INDEPENDENTE DE NODE.JS)
+===============================================================
+
+🚀 COMO USAR (BASTA DAR 2 CLIQUES!)
+---------------------------------------------------------------
+1. Dê 2 cliques em "index.html" (ou "index-standalone.html").
+   - Abrirá a tela de apresentação com vídeo oficial PatBO.
+   - Clique no botão "ACESSAR SISTEMA".
+
+2. Na tela da aplicação (app.html):
+   - Arraste ou selecione o PDF do relatório da Millennium (Pré-Fase).
+   - O sistema extrai automaticamente todos os dados:
+     * Ordem de Produção (OP)
+     * Referência e Nome da Peça
+     * Pedido e Cor formatada
+     * Grade de Peças por tamanho com total
+     * Lista completa de Aviamentos e Matérias-Primas (com Title Case e cores)
+   - O sistema identifica automaticamente se precisa de 1 ou 2 páginas:
+     * Até 16 itens: Gera 1 página perfeita (Página 1).
+     * Mais de 16 itens: Divide em 2 páginas com cabeçalho de continuação
+       e assinaturas no final da página 2.
+   - Você pode editar qualquer campo na tela apenas clicando nele!
+   - Clique em "Imprimir / Salvar" para impressão A4 nativa ou "Baixar PDF".
+
+---------------------------------------------------------------
+📁 ARQUIVOS PRINCIPAIS
+---------------------------------------------------------------
+aviamento-checklist/
+├── index.html              <- Página Inicial Oficial (com vídeo e logo)
+├── index-standalone.html   <- Cópia sincronizada da página inicial
+├── app.html                <- Aplicação do Checklist EXP-AVI-001
+├── public/
+│   ├── video-patbo.mp4     <- Vídeo institucional de alta resolução
+│   └── logo-patbo.png      <- Logo PatBO
+└── README.md e LEIA-ME.txt <- Documentação de suporte
+===============================================================

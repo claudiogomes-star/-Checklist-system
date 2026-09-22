@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PATBO — Checklist de Envio de Tecidos (EXP-TEC-001)</title>
+    <link rel="icon" type="image/png" href="public/logo-patbo.png">
+    <!-- PDF.js e jsPDF via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --patbo-navy: #1F2937;
+            --patbo-navy-dark: #111827;
+            --patbo-navy-light: #374151;
+            --patbo-gray-header: #D1D5DB;
+            --patbo-gray-light: #F3F4F6;
+            --patbo-gray-alt: #F9FAFB;
+            --patbo-border: #9CA3AF;
+            --patbo-border-dark: #4B5563;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0F172A;
+            color: #1E293B;
+            min-height: 100vh;
+        }
+
+        /* HEADER DE NAVEGAÇÃO */
+        .app-header {
+            background: #1E293B;
+            border-bottom: 1px solid #334155;
+            padding: 12px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .btn-voltar {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #94A3B8;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+
+        .btn-voltar:hover {
+            color: white;
+            background: rgba(255,255,255,0.12);
+        }
+
+        /* Abas de Módulo (Aviamentos vs Tecidos) */
+        .module-switcher {
+            display: flex;
+            background: #0F172A;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 3px;
+            gap: 4px;
+        }
+
+        .module-tab {
+            padding: 6px 14px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #94A3B8;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .module-tab:hover {
+            color: white;
+        }
+
+        .module-tab.active {
+            background: #1B365D;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-secondary {
+            background: #334155;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-accent {
+            background: #3B82F6;
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: #2563EB;
+        }
+
+        .btn-primary {
+            background: #10B981;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #059669;
+        }
+
+        /* ÁREA DE TRABALHO */
+        .workspace {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        /* PAINEL LATERAL */
+        .control-panel {
+            width: 340px;
+            flex-shrink: 0;
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 24px;
+            color: white;
+        }
+
+        .control-panel h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #F8FAFC;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .upload-dropzone {
+            border: 2px dashed #475569;
+            border-radius: 12px;
+            padding: 24px 16px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(15, 23, 42, 0.4);
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-dropzone:hover, .upload-dropzone.drag-over {
+            border-color: #3B82F6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .upload-icon {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 10px;
+            color: #93C5FD;
+        }
+
+        .upload-dropzone p {
+            font-size: 13px;
+            color: #94A3B8;
+            margin-top: 6px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34D399;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .info-card {
+            background: #0F172A;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+            font-size: 12px;
+        }
+
+        .info-card-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #94A3B8;
+        }
+
+        .info-card-row strong {
+            color: #F1F5F9;
+        }
+
+        .info-card-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .help-box {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3B82F6;
+            padding: 12px;
+            border-radius: 0 8px 8px 0;
+            font-size: 12px;
+            color: #93C5FD;
+            line-height: 1.5;
+        }
+
+        /* CONTAINER DAS FOLHAS A4 */
+        .preview-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            padding: 12mm 15mm;
+            margin-bottom: 30px;
+            position: relative;
+            box-sizing: border-box;
+            color: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+
+        .sheet-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ESTILOS DO DOCUMENTO EXP-TEC-001 */
+        .doc-page-badge {
+            text-align: right;
+            font-size: 8px;
+            font-weight: 700;
+            color: #4B5563;
+            margin-bottom: 4px;
+        }
+
+        .doc-header-center {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .doc-header-center h1 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #000;
+            text-transform: uppercase;
+            letter-spacing: -0.2px;
+        }
+
+        .doc-header-center p {
+            font-size: 9px;
+            color: #4B5563;
+            margin-top: 2px;
+        }
+
+        .doc-meta-bar {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--patbo-border-dark);
+            margin-bottom: 12px;
+            font-size: 8px;
+            text-align: center;
+        }
+
+        .doc-meta-bar td {
+            border: 1px solid var(--patbo-border-dark);
+            padding: 4px 6px;
+        }
+
+        .doc-meta-bar td.label {
+            background-color: var(--patbo-gray-header);
+            font-weight: 800;
+            text-transform: uppercase;
+            width: 18%;
+        }
+
+        .doc-meta-bar td.val {
+            font-weight: 700;
+            width: 15%;
+        }
+
+        /* Seções e Tabelas */
+        .tec-section-title {
+            background-color: var(--patbo-gray-header);
+            border: 1px solid var(--patbo-border-dark);
+            border-bottom: none;
+            padding: 4px 8px;
+            font-size: 8.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #000;
+        }
+
+        .tec-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--patbo-border-dark);
+            font-size: 7.5px;
+            margin-bottom: 12px;
+        }
+
+        .tec-table th {
+            background-color: var(--patbo-gray-header);
+            border: 1px solid var(--patbo-border-dark);
+            padding: 4px 5px;
+            font-size: 7.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #000;
+            text-align: left;
+        }
+
+        .tec-table th.center, .tec-table td.center {
+            text-align: center;
+        }
+
+        .tec-table th.right, .tec-table td.right {
+            text-align: right;
+        }
+
+        .tec-table td {
+            border: 1px solid var(--patbo-border-dark);
+            padding: 4px 5px;
+            color: #000;
+            vertical-align: middle;
+        }
+
+        .tec-table tr:nth-child(even) {
+            background-color: var(--patbo-gray-alt);
+        }
+
+        .tec-table tr.total-row {
+            background-color: var(--patbo-gray-light);
+            font-weight: 800;
+        }
+
+        .editable-cell {
+            outline: none;
+            cursor: text;
+        }
+
+        .editable-cell:hover, .editable-cell:focus {
+            background: #FEF08A;
+        }
+
+        .line-blank {
+            display: inline-block;
+            width: 100%;
+            border-bottom: 1px solid #000;
+            height: 12px;
+        }
+
+        .check-box-small {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border: 1px solid #000;
+            background: #FFF;
+            vertical-align: middle;
+        }
+
+        /* Rodapé */
+        .tec-footer {
+            border-top: 1px solid #9CA3AF;
+            padding-top: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 6.5px;
+            color: #4B5563;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Impressão */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .app-header, .control-panel {
+                display: none !important;
+            }
+
+            .workspace {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: none !important;
+                display: block !important;
+            }
+
+            .preview-container {
+                display: block !important;
+                width: 100% !important;
+            }
+
+            .sheet {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 10mm 12mm !important;
+                width: 100% !important;
+                height: 100vh !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                border: none !important;
+            }
+
+            .sheet:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BARRA SUPERIOR -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <a href="index.html" class="btn-voltar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Início
+                </a>
+                <img src="public/logo-patbo.png" alt="PatBO Logo" style="height: 26px; width: auto; object-fit: contain; filter: brightness(0) invert(1);">
+                <div class="header-title" style="font-size: 14px; font-weight: 700; color: white; margin-left: 2px;">
+                    <span>PATBO • Expedição</span>
+                </div>
+
+                <!-- Alternador de Módulos (Aviamentos x Tecidos) -->
+                <nav class="module-switcher">
+                    <a href="app.html" class="module-tab">
+                        <span>🧵</span> Aviamentos
+                    </a>
+                    <a href="tecidos.html" class="module-tab active">
+                        <span>🧶</span> Tecidos (EXP-TEC-001)
+                    </a>
+                </nav>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn-action btn-secondary" onclick="loadSampleTecidos()" title="Carregar as 4 OPs de exemplo">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    Carregar Exemplo (4 OPs)
+                </button>
+
+                <button class="btn-action btn-accent" onclick="window.print()" title="Imprimir em A4 nativo">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    Imprimir / Salvar
+                </button>
+
+                <button class="btn-action btn-primary" onclick="exportTecidosPDF()" title="Baixar PDF com as OPs no nome">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Baixar PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- WORKSPACE -->
+    <div class="workspace">
+        
+        <!-- PAINEL LATERAL -->
+        <aside class="control-panel">
+            <h3>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Importar OPs de Tecidos
+            </h3>
+
+            <!-- Dropzone para PDF (aceita múltiplos) -->
+            <div class="upload-dropzone" id="dropzoneTec" onclick="document.getElementById('fileInputTec').click()">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <polyline points="9 15 12 12 15 15"></polyline>
+                </svg>
+                <div style="font-weight: 700; font-size: 14px; color: #F1F5F9;">Clique ou arraste os PDFs</div>
+                <p>Relatórios Pré-Fase (uma ou várias OPs)</p>
+                <input type="file" id="fileInputTec" class="file-input" accept=".pdf" multiple onchange="handleTecidosFiles(this.files)">
+            </div>
+
+            <div class="status-badge" id="statusBadgeTec">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span id="statusTextTec">4 OPs Agrupadas • 3 Páginas</span>
+            </div>
+
+            <!-- Resumo -->
+            <div class="info-card">
+                <div class="info-card-row"><span>OPs Carregadas:</span> <strong id="cardTotalOPs">4 OPs</strong></div>
+                <div class="info-card-row"><span>Lista de OPs:</span> <strong id="cardOPsList" style="font-size: 11px;">284364 • 284365...</strong></div>
+                <div class="info-card-row"><span>Total de Peças:</span> <strong id="cardTotalPecas">53 peças</strong></div>
+                <div class="info-card-row"><span>Tecidos Consolidados:</span> <strong id="cardTecidosConsolidados">11 itens</strong></div>
+                <div class="info-card-row"><span>Documento:</span> <strong>EXP-TEC-001 (Rev 00)</strong></div>
+            </div>
+
+            <div class="help-box">
+                💡 <strong>Consolidação Automática:</strong> Se o mesmo tecido estiver em mais de uma OP, o sistema soma as metragens automaticamente na Seção 3!
+            </div>
+        </aside>
+
+        <!-- CONTAINER DAS 3 PÁGINAS A4 -->
+        <main class="preview-container" id="tecidosSheetsContainer">
+            <!-- As páginas serão renderizadas via JavaScript -->
+        </main>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Estrutura de dados padrão de Tecidos (Inicia com as 4 OPs do exemplo)
+        let tecidosData = {
+            docNumero: 'EXP-TEC-001',
+            revisao: '00',
+            data: '21/09/2026',
+            notaFiscal: '',
+            dataEnvio: '',
+            destino: '',
+            ops: [
+                {
+                    op: '284364',
+                    referencia: 'C26BOBOL34737 - BOLSA PATBO',
+                    pedidos: '000000249100 / 000000249104',
+                    cor: '00699 BEGE CLARO',
+                    qtdPecas: 21,
+                    grades: { '34': '—', '36': '—', '38': '—', '40': '—', '42': '—', '44': '—', '46': '—', 'U': 21, 'total': 21 },
+                    materiais: [
+                        { codigo: '0000218227', descricao: 'MALHA LUREX LUMEN FV2600055C', cor: '166955 BEGE', consumo: 2.31, un: 'MT' },
+                        { codigo: '0000219469', descricao: 'ALFAIATARIA MARANT - AT-24077', cor: '00167131 PINGADO', consumo: 2.31, un: 'MT' },
+                        { codigo: '00002490', descricao: 'ENTRETELA CAVALINHA LPF550M', cor: '00010 BRANCO', consumo: 2.31, un: 'MT' },
+                        { codigo: '00003588', descricao: 'ENTRETELA 6059', cor: '00615 NATURAL', consumo: 2.31, un: 'MT' }
+                    ]
+                },
+                {
+                    op: '284365',
+                    referencia: 'C26BOBOL34738 - BOLSA PATBO',
+                    pedidos: '000000249104',
+                    cor: '00699 BEGE CLARO',
+                    qtdPecas: 6,
+                    grades: { '34': '—', '36': '—', '38': '—', '40': '—', '42': '—', '44': '—', '46': '—', 'U': 6, 'total': 6 },
+                    materiais: [
+                        { codigo: '0000218065', descricao: 'SILK TOUCH 02 122638', cor: '00166912 VAPOR COD', consumo: 0.66, un: 'MT' },
+                        { codigo: '0000238695', descricao: 'MADRID 2', cor: '00034 OFF WHITE', consumo: 0.66, un: 'MT' },
+                        { codigo: '00002490', descricao: 'ENTRETELA CAVALINHA LPF550M', cor: '00010 BRANCO', consumo: 0.66, un: 'MT' },
+                        { codigo: '00003588', descricao: 'ENTRETELA 6059', cor: '00615 NATURAL', consumo: 0.66, un: 'MT' }
+                    ]
+                },
+                {
+                    op: '284366',
+                    referencia: 'C26BOBOL34739 - BOLSA PATBO',
+                    pedidos: '000000249100',
+                    cor: '00380 ROSA',
+                    qtdPecas: 10,
+                    grades: { '34': '—', '36': '—', '38': '—', '40': '—', '42': '—', '44': '—', '46': '—', 'U': 10, 'total': 10 },
+                    materiais: [
+                        { codigo: '0000154798', descricao: 'LINHO WASHED SOFT NEW - P11LN0163', cor: '01676 BLUSH', consumo: 1.30, un: 'MT' },
+                        { codigo: '00002490', descricao: 'ENTRETELA CAVALINHA LPF550M', cor: '00010 BRANCO', consumo: 1.20, un: 'MT' },
+                        { codigo: '00003588', descricao: 'ENTRETELA 6059', cor: '00615 NATURAL', consumo: 1.20, un: 'MT' },
+                        { codigo: '000074564', descricao: 'VOIL 60 P11NL0100', cor: '00018 NUDE', consumo: 1.00, un: 'MT' }
+                    ]
+                },
+                {
+                    op: '284367',
+                    referencia: 'C26BOBOL35107 - BOLSA POUCH PATBO',
+                    pedidos: '000000249100 / 000000249104',
+                    cor: '00034 OFF WHITE',
+                    qtdPecas: 16,
+                    grades: { '34': '—', '36': '—', '38': '—', '40': '—', '42': '—', '44': '—', '46': '—', 'U': 16, 'total': 16 },
+                    materiais: [
+                        { codigo: '00001852', descricao: 'ENTRETELA DE MALHA 2805/325', cor: '00010 BRANCO', consumo: 3.04, un: 'MT' },
+                        { codigo: '00001864', descricao: 'HI MULTI COM ELASTANO P11TP0024', cor: '00034 OFF WHITE', consumo: 1.44, un: 'MT' },
+                        { codigo: '000072349', descricao: 'BACK CREPE SATIN VIENNA KT-63850AG', cor: '00126 BLANC LE', consumo: 4.16, un: 'MT' }
+                    ]
+                }
+            ],
+            rolos: Array.from({ length: 20 }, (_, i) => ({
+                num: String(i + 1).padStart(2, '0'),
+                tecido: '',
+                metragem: ''
+            })),
+            substituicoes: Array.from({ length: 4 }, () => ({ orig: '', sub: '', aut: '' })),
+            divergencias: Array.from({ length: 4 }, () => ({ tecido: '', desc: '', aut: '' })),
+            observacoesGerais: ''
+        };
+
+        // Consolidação das Matérias-Primas (Soma materiais idênticos de OPs diferentes)
+        function getConsolidatedMaterials() {
+            const map = new Map();
+
+            const tecidoDataOps = tecidosData.ops || [];
+            tecidoDataOps.forEach(opItem => {
+                (opItem.materiais || []).forEach(mat => {
+                    // Chave única: código normalizado + cor normalizada
+                    const normCode = mat.codigo ? mat.codigo.replace(/^0+/, '') : '';
+                    const normCor = mat.cor ? mat.cor.trim().toUpperCase().replace(/\s+/g, ' ') : 'ÚNICA';
+                    const key = `${normCode}_${normCor}`;
+
+                    if (map.has(key)) {
+                        const existing = map.get(key);
+                        existing.consumoTotal += parseFloat(mat.consumo) || 0;
+                        if (!existing.ops.includes(opItem.op)) {
+                            existing.ops.push(opItem.op);
+                        }
+                    } else {
+                        map.set(key, {
+                            codigo: mat.codigo,
+                            descricao: mat.descricao,
+                            cor: mat.cor,
+                            consumoTotal: parseFloat(mat.consumo) || 0,
+                            un: mat.un || 'MT',
+                            ops: [opItem.op]
+                        });
+                    }
+                });
+            });
+
+            return Array.from(map.values());
+        }
+
+        // Soma total de peças
+        function getTotalDocumentoPecas() {
+            return (tecidosData.ops || []).reduce((acc, curr) => acc + (parseInt(curr.qtdPecas, 10) || 0), 0);
+        }
+
+        // Upload Drag & Drop
+        const dropzoneTec = document.getElementById('dropzoneTec');
+        dropzoneTec.addEventListener('dragover', (e) => { e.preventDefault(); dropzoneTec.classList.add('drag-over'); });
+        dropzoneTec.addEventListener('dragleave', () => dropzoneTec.classList.remove('drag-over'));
+        dropzoneTec.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzoneTec.classList.remove('drag-over');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleTecidosFiles(e.dataTransfer.files);
+            }
+        });
+
+        // Reconstrutor Espacial 2D: Reorganiza os itens de texto pelas posições visuais reais (Y e X)
+        function extractSpatialLinesFromPage(textContent) {
+            if (!textContent || !textContent.items || textContent.items.length === 0) return '';
+
+            const TOLERANCE = 4.5;
+            const lineBuckets = [];
+
+            textContent.items.forEach(item => {
+                const str = item.str;
+                if (!str || !str.trim()) return;
+
+                const tx = item.transform[4]; // posição horizontal X
+                const ty = item.transform[5]; // posição vertical Y
+
+                let bucket = lineBuckets.find(b => Math.abs(b.y - ty) <= TOLERANCE);
+                if (!bucket) {
+                    bucket = { y: ty, items: [] };
+                    lineBuckets.push(bucket);
+                }
+                bucket.items.push({ x: tx, str: str.trim() });
+            });
+
+            // Ordena as linhas do topo para baixo (Y decrescente no PDF)
+            lineBuckets.sort((a, b) => b.y - a.y);
+
+            // Em cada linha, ordena os itens da esquerda para a direita (X crescente)
+            const lines = lineBuckets.map(bucket => {
+                bucket.items.sort((a, b) => a.x - b.x);
+                // Deduplica itens idênticos renderizados na mesma posição (efeito faux-bold do FastReport)
+                const deduped = [];
+                for (const item of bucket.items) {
+                    if (deduped.length > 0) {
+                        const last = deduped[deduped.length - 1];
+                        if (item.str === last.str && Math.abs(item.x - last.x) <= 4.0) {
+                            continue;
+                        }
+                    }
+                    deduped.push(item);
+                }
+                return deduped.map(i => i.str).join(' ');
+            });
+
+            return lines.join('\n');
+        }
+
+        // Processamento de múltiplos PDFs ou PDF com várias páginas
+        async function handleTecidosFiles(files) {
+            if (!files || files.length === 0) return;
+            document.getElementById('statusTextTec').innerText = 'Processando PDF(s)...';
+
+            try {
+                let allPagesSpatialText = [];
+
+                for (let f = 0; f < files.length; f++) {
+                    const file = files[f];
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                    for (let p = 1; p <= pdf.numPages; p++) {
+                        const page = await pdf.getPage(p);
+                        const textContent = await page.getTextContent();
+                        const pageSpatialText = extractSpatialLinesFromPage(textContent);
+                        allPagesSpatialText.push(pageSpatialText);
+                    }
+                }
+
+                // Parser de cada OP encontrada
+                const newOps = [];
+                allPagesSpatialText.forEach(pageTxt => {
+                    const parsedOp = parseSingleTecidoReport(pageTxt);
+                    if (parsedOp && parsedOp.op) {
+                        if (!newOps.some(o => o.op === parsedOp.op)) {
+                            newOps.push(parsedOp);
+                        }
+                    }
+                });
+
+                if (newOps.length > 0) {
+                    tecidosData.ops = newOps;
+                    renderTecidosPages();
+                    document.getElementById('statusTextTec').innerText = `${newOps.length} OPs processadas com sucesso!`;
+                } else {
+                    alert('Nenhuma Ordem de Produção válida foi detectada nos arquivos fornecidos.');
+                    document.getElementById('statusTextTec').innerText = 'Falha no processamento';
+                }
+            } catch (err) {
+                console.error('Erro na leitura de tecidos:', err);
+                alert('Erro ao processar os relatórios de tecidos. Verifique os arquivos.');
+            }
+        }
+
+        // Parser Dinâmico Universal para relatórios Millennium NetWork Ltda (Pré-Fase)
+        function parseSingleTecidoReport(pageText) {
+            const lines = pageText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) return null;
+
+            let op = '';
+            let referencia = 'PRODUTO PATBO';
+            let pedidos = '';
+            let cor = 'ÚNICA';
+            let qtdPecas = 0;
+            const materiais = [];
+
+            // 1. Localiza Ordem de Produção (OP) e Produto / Referência
+            // Na Millennium, a linha do cabeçalho da OP costuma ser: "Ordem 284364 Produto C26BOBOL34737 - BOLSA PATBO"
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                // Ignora linhas de filtros do relatório da Millennium
+                if (l.includes('Agrupa por') || l.includes('Tipo do Produto') || l.includes('Seleção da Matéria-Prima') || l.includes('Status da Ordem')) {
+                    continue;
+                }
+
+                // Tenta extrair ambos se estiverem na mesma linha
+                const comboMatch = l.match(/(?:Ordem|OP)\s*[:\[\s]*(\d{4,})\s+Produto\s*[:\s]+([^\n\r]+)/i);
+                if (comboMatch) {
+                    op = comboMatch[1];
+                    let raw = comboMatch[2].trim().split(/\b(?:Pré-Fase|Pedido|Início|Data)\b/i)[0].trim();
+                    if (raw && !raw.toLowerCase().startsWith('acabado')) {
+                        referencia = raw;
+                    }
+                    break;
+                }
+
+                // Localiza OP individual se ainda não achou
+                if (!op) {
+                    const opMatch = l.match(/(?:Ordem(?:\s+de\s+Produção)?|OP)\s*[:\[\s]+(\d{4,})/i);
+                    if (opMatch) op = opMatch[1];
+                }
+            }
+
+            // 2. Localiza Produto individual se não foi pego na linha combinada
+            if (referencia === 'PRODUTO PATBO' || !referencia) {
+                for (let i = 0; i < lines.length; i++) {
+                    const l = lines[i];
+                    if (l.includes('Agrupa por') || l.includes('Tipo do Produto') || l.includes('Seleção da Matéria-Prima') || l.includes('Status da Ordem')) {
+                        continue;
+                    }
+                    if (/\bProduto\b/i.test(l)) {
+                        const prodMatch = l.match(/\bProduto\s*[:\s]+([^\n\r]+)/i);
+                        if (prodMatch) {
+                            let raw = prodMatch[1].trim().split(/\b(?:Pré-Fase|Pedido|Início|Data)\b/i)[0].trim();
+                            if (raw && !raw.toLowerCase().startsWith('acabado')) {
+                                referencia = raw;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!op) return null; // Não é uma página de OP válida
+
+            // 3. Localiza os Pedidos
+            const pedidosList = [];
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (/\bPedido\b/i.test(l)) {
+                    // Pega números de pedido na mesma linha
+                    const pNums = l.match(/\b\d{6,14}\b/g);
+                    if (pNums) pedidosList.push(...pNums);
+
+                    // Verifica se na linha imediatamente seguinte há mais números de pedido
+                    if (i + 1 < lines.length) {
+                        const nextPNums = lines[i + 1].match(/\b\d{6,14}\b/g);
+                        if (nextPNums) pedidosList.push(...nextPNums);
+                    }
+                    break;
+                }
+            }
+            pedidos = pedidosList.length > 0 ? pedidosList.join(' / ') : '—';
+
+            // 4. Localiza a Cor da Peça e Quantidade
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (/Est\s*\.?\s*Cor|Cor\s*[:\s]/i.test(l)) {
+                    // A linha de dados da cor é a linha seguinte (ou a mesma linha se concatenada)
+                    const targetLine = (i + 1 < lines.length && !lines[i + 1].includes('Total')) ? lines[i + 1] : l;
+                    
+                    // Ex: 000 00699BEGE CLARO 21 21  ou  0 00034 OFF WHITE 16 16  ou  000 00380ROSA 10 10
+                    const corMatch = targetLine.match(/(?:000|0|\d{1,4})?\s*([0-9]{3,7}\s*[A-Za-zÀ-Ú\s]+?)(?=\s+\d+|$)/i);
+                    if (corMatch) {
+                        let rawCor = corMatch[1].trim();
+                        // Se estiver grudado ex: 00699BEGE CLARO -> separa código e nome
+                        const glued = rawCor.match(/^(\d{4,6})([A-Za-zÀ-Ú\s]+)$/);
+                        if (glued) {
+                            cor = `${glued[1]} ${glued[2].trim()}`;
+                        } else {
+                            cor = rawCor;
+                        }
+                    }
+
+                    // Tenta extrair a quantidade caso ainda não tenha sido encontrada
+                    const lineNums = targetLine.match(/\b\d+\b/g);
+                    if (lineNums && lineNums.length > 0) {
+                        const lastNum = parseInt(lineNums[lineNums.length - 1], 10);
+                        if (!isNaN(lastNum) && lastNum > 0 && qtdPecas === 0) {
+                            qtdPecas = lastNum;
+                        }
+                    }
+                    break;
+                }
+            }
+
+            // 5. Localiza a Quantidade Total de Peças pelo rodapé do bloco de orientação
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                const totalMatch = l.match(/(?:Total\s+de\s+Peças|Total\s+Oficina|Total\s+Geral)[\s:]+([0-9]+)/i);
+                if (totalMatch) {
+                    qtdPecas = parseInt(totalMatch[1], 10);
+                    break;
+                }
+            }
+            if (qtdPecas === 0) qtdPecas = 1;
+
+            // 6. Localiza todas as Matérias-Primas (Tecidos e Entretelas)
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                const tokens = l.split(/\s+/);
+                
+                // Linha de matéria-prima começa com código numérico (4 a 12 dígitos) e tem pelo menos 4 colunas
+                if (tokens.length >= 4 && /^\d{4,12}$/.test(tokens[0])) {
+                    const codigo = tokens[0];
+                    
+                    let un = 'MT';
+                    let consumo = 0;
+                    let lastIdx = tokens.length - 1;
+                    
+                    // Unidade no final (MT, M, KG, UN, PC, RL, etc.)
+                    if (/^[A-Za-z]{1,4}$/.test(tokens[lastIdx])) {
+                        un = tokens[lastIdx].toUpperCase();
+                        lastIdx--;
+                    }
+                    
+                    // Consumo previsto
+                    if (lastIdx >= 1 && /^[\d.,]+$/.test(tokens[lastIdx])) {
+                        consumo = parseFloat(tokens[lastIdx].replace(',', '.')) || 0;
+                        lastIdx--;
+                    }
+                    
+                    // Remove tamanho se for 'U', 'UNICA' ou tamanho de grade
+                    if (lastIdx >= 1 && /^(U|UNICA|\d{1,2})$/i.test(tokens[lastIdx])) {
+                        lastIdx--;
+                    }
+                    
+                    // Remove estampa padrão se presente (ex: UNICA e 000)
+                    if (lastIdx >= 1 && /^UNICA$/i.test(tokens[lastIdx])) {
+                        lastIdx--;
+                    }
+                    if (lastIdx >= 1 && /^\d{3,4}$/.test(tokens[lastIdx])) {
+                        lastIdx--;
+                    }
+                    
+                    // Tokens restantes formam Descrição + Cor
+                    const remainingTokens = tokens.slice(1, lastIdx + 1);
+                    let middleStr = remainingTokens.join(' ').replace(/\s*000\s+UNICA\b/gi, '').trim();
+                    
+                    // Procura o código de cor no final (ex: 166955 BEGE, 00167131 PINGADO, 00010 BRANCO, etc.)
+                    const mCor = middleStr.match(/(\d{3,8}\s+[A-Za-zÀ-Ú\s]+)$/);
+                    let matCor = 'ÚNICA';
+                    let desc = middleStr;
+                    
+                    if (mCor) {
+                        matCor = mCor[1].trim();
+                        desc = middleStr.substring(0, mCor.index).trim();
+                    }
+                    
+                    if (desc) {
+                        materiais.push({
+                            codigo,
+                            descricao: desc,
+                            cor: matCor,
+                            consumo,
+                            un
+                        });
+                    }
+                }
+            }
+
+            // Define grades padrão (tamanho único U = qtdPecas)
+            let gradesObj = { '34': '—', '36': '—', '38': '—', '40': '—', '42': '—', '44': '—', '46': '—', 'U': qtdPecas, 'total': qtdPecas };
+
+            // Se o relatório tiver a linha com múltiplos números de grade (ex: 34 a 46):
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (/Total\s+de\s+Peças|Qtdes\s+Atuais/i.test(l)) {
+                    const nums = l.match(/\b\d+\b/g);
+                    if (nums && nums.length >= 7) {
+                        const nArr = nums.map(n => parseInt(n, 10));
+                        gradesObj['34'] = nArr[0] !== undefined ? nArr[0] : '—';
+                        gradesObj['36'] = nArr[2] !== undefined ? nArr[2] : (nArr[1] || '—');
+                        gradesObj['38'] = nArr[3] !== undefined ? nArr[3] : '—';
+                        gradesObj['40'] = nArr[4] !== undefined ? nArr[4] : '—';
+                        gradesObj['42'] = nArr[5] !== undefined ? nArr[5] : '—';
+                        gradesObj['44'] = nArr[6] !== undefined ? nArr[6] : '—';
+                        gradesObj['46'] = nArr[7] !== undefined ? nArr[7] : '—';
+                        gradesObj['U'] = '—';
+                        break;
+                    }
+                }
+            }
+
+            return {
+                op,
+                referencia,
+                pedidos,
+                cor,
+                qtdPecas,
+                grades: gradesObj,
+                materiais
+            };
+        }
+
+        // Carrega exemplo padrão
+        function loadSampleTecidos() {
+            location.reload();
+        }
+
+        // RENDERIZAÇÃO DAS 3 PÁGINAS A4
+        function renderTecidosPages() {
+            const container = document.getElementById('tecidosSheetsContainer');
+            container.innerHTML = '';
+
+            const opsList = (tecidosData.ops || []).map(o => o.op).join(' • ');
+            const totalPecas = getTotalDocumentoPecas();
+            const consolidated = getConsolidatedMaterials();
+
+            // Atualiza painel lateral
+            document.getElementById('cardTotalOPs').innerText = `${tecidosData.ops.length} OPs`;
+            document.getElementById('cardOPsList').innerText = opsList;
+            document.getElementById('cardTotalPecas').innerText = `${totalPecas} peças`;
+            document.getElementById('cardTecidosConsolidados').innerText = `${consolidated.length} itens`;
+
+            // ================= PÁGINA 1 =================
+            const page1 = document.createElement('div');
+            page1.className = 'sheet';
+
+            let opsIdentRows = '';
+            tecidosData.ops.forEach(o => {
+                opsIdentRows += `
+                    <tr>
+                        <td class="center editable-cell">${o.op}</td>
+                        <td class="editable-cell">${o.referencia}</td>
+                        <td class="editable-cell">${o.pedidos}</td>
+                        <td class="editable-cell">${o.cor}</td>
+                        <td class="center editable-cell" style="font-weight: 800;">${o.qtdPecas}</td>
+                    </tr>
+                `;
+            });
+
+            let gradeRows = '';
+            tecidosData.ops.forEach(o => {
+                const g = o.grades || {};
+                const g34 = g['34'] !== undefined ? g['34'] : '—';
+                const g36 = g['36'] !== undefined ? g['36'] : '—';
+                const g38 = g['38'] !== undefined ? g['38'] : '—';
+                const g40 = g['40'] !== undefined ? g['40'] : '—';
+                const g42 = g['42'] !== undefined ? g['42'] : '—';
+                const g44 = g['44'] !== undefined ? g['44'] : '—';
+                const g46 = g['46'] !== undefined ? g['46'] : '—';
+                const gU = g['U'] !== undefined ? g['U'] : (o.qtdPecas || '—');
+                const gTot = g['total'] !== undefined ? g['total'] : (o.qtdPecas || 0);
+
+                gradeRows += `
+                    <tr>
+                        <td class="center editable-cell">${o.op}</td>
+                        <td class="editable-cell">${o.referencia}</td>
+                        <td class="center editable-cell">${g34}</td>
+                        <td class="center editable-cell">${g36}</td>
+                        <td class="center editable-cell">${g38}</td>
+                        <td class="center editable-cell">${g40}</td>
+                        <td class="center editable-cell">${g42}</td>
+                        <td class="center editable-cell">${g44}</td>
+                        <td class="center editable-cell">${g46}</td>
+                        <td class="center editable-cell" style="font-weight: 800; background: rgba(59, 130, 246, 0.05);">${gU}</td>
+                        <td class="center editable-cell" style="font-weight: 800;">${gTot}</td>
+                    </tr>
+                `;
+            });
+
+            let consolidatedRows = '';
+            consolidated.forEach(m => {
+                const consumoFormatado = m.consumoTotal.toFixed(2).replace('.', ',');
+                consolidatedRows += `
+                    <tr>
+                        <td class="center editable-cell">${m.codigo}</td>
+                        <td class="editable-cell">${m.descricao}</td>
+                        <td class="editable-cell">${m.cor}</td>
+                        <td class="right editable-cell" style="font-weight: 800;">${consumoFormatado} ${m.un}</td>
+                    </tr>
+                `;
+            });
+
+            page1.innerHTML = `
+                <div class="sheet-body">
+                    <div class="doc-page-badge">Página 1</div>
+                    <div class="doc-header-center">
+                        <h1>CHECKLIST DE ENVIO DE TECIDOS</h1>
+                        <p>Controle Interno de Expedição — Produção</p>
+                    </div>
+
+                    <!-- BARRA DE METADADOS -->
+                    <table class="doc-meta-bar">
+                        <tr>
+                            <td class="label">DOCUMENTO</td>
+                            <td class="val">${tecidosData.docNumero}</td>
+                            <td class="label">REVISÃO</td>
+                            <td class="val">${tecidosData.revisao}</td>
+                            <td class="label">DATA</td>
+                            <td class="val editable-cell" contenteditable="true" onblur="tecidosData.data = this.innerText">${tecidosData.data}</td>
+                        </tr>
+                    </table>
+
+                    <!-- DADOS DO ENVIO -->
+                    <div class="tec-section-title">DADOS DO ENVIO</div>
+                    <table class="tec-table" style="margin-bottom: 8px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 33%;">NÚMERO DA NOTA FISCAL</th>
+                                <th style="width: 33%;">DATA DO ENVIO</th>
+                                <th style="width: 34%;">DESTINO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="line-blank"></span></td>
+                                <td>____ / ____ / ________</td>
+                                <td><span class="line-blank"></span></td>
+                            </tr>
+                        </tbody>
+                        <thead>
+                            <tr>
+                                <th>QUANTIDADE DE OPs NO DOCUMENTO</th>
+                                <th colspan="2">OPs AGRUPADAS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: 800;">${tecidosData.ops.length} OPs</td>
+                                <td colspan="2" style="font-weight: 800;">${opsList}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 1. IDENTIFICAÇÃO DA PRODUÇÃO -->
+                    <div class="tec-section-title">1. IDENTIFICAÇÃO DA PRODUÇÃO — OPs AGRUPADAS</div>
+                    <table class="tec-table" style="margin-bottom: 8px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 12%;" class="center">OP</th>
+                                <th style="width: 38%;">REFERÊNCIA / PEÇA</th>
+                                <th style="width: 25%;">PEDIDO</th>
+                                <th style="width: 15%;">COR</th>
+                                <th style="width: 10%;" class="center">QTD. PEÇAS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${opsIdentRows}
+                            <tr class="total-row">
+                                <td colspan="4" style="text-align: right; padding-right: 12px;">TOTAL DO DOCUMENTO</td>
+                                <td class="center" style="font-size: 8.5px;">${totalPecas}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 2. GRADE DAS REFERÊNCIAS -->
+                    <div class="tec-section-title">2. GRADE DAS REFERÊNCIAS</div>
+                    <table class="tec-table" style="margin-bottom: 2px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 11%;" class="center">OP</th>
+                                <th style="width: 37%;">REFERÊNCIA</th>
+                                <th style="width: 5.5%;" class="center">34</th>
+                                <th style="width: 5.5%;" class="center">36</th>
+                                <th style="width: 5.5%;" class="center">38</th>
+                                <th style="width: 5.5%;" class="center">40</th>
+                                <th style="width: 5.5%;" class="center">42</th>
+                                <th style="width: 5.5%;" class="center">44</th>
+                                <th style="width: 5.5%;" class="center">46</th>
+                                <th style="width: 6.5%;" class="center">U</th>
+                                <th style="width: 6.5%;" class="center">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${gradeRows}
+                        </tbody>
+                    </table>
+                    <div style="font-size: 6.5px; color: #4B5563; font-style: italic; margin-bottom: 8px;">
+                        Observação: produtos de tamanho único (ex.: bolsas e acessórios) exibem a quantidade na coluna "U". Para peças de vestuário com grade 34–46, os dados são distribuídos por numeração.
+                    </div>
+
+                    <!-- 3. LISTA CONSOLIDADA DE MATÉRIA-PRIMA -->
+                    <div class="tec-section-title">3. LISTA CONSOLIDADA DE MATÉRIA-PRIMA — TECIDOS</div>
+                    <table class="tec-table" style="margin-bottom: 8px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 18%;" class="center">CÓDIGO</th>
+                                <th style="width: 46%;">DESCRIÇÃO DO TECIDO</th>
+                                <th style="width: 24%;">COR / ESTAMPA</th>
+                                <th style="width: 12%;" class="right">QTD. TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${consolidatedRows}
+                        </tbody>
+                    </table>
+
+                    <!-- 4. CHECKLIST FÍSICO DOS ROLOS (Início na Página 1) -->
+                    <div class="tec-section-title">4. CHECKLIST FÍSICO DOS ROLOS</div>
+                    <table class="tec-table" style="margin-bottom: 4px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 8%;" class="center">Nº</th>
+                                <th style="width: 58%;">TECIDO</th>
+                                <th style="width: 22%;">METRAGEM</th>
+                                <th style="width: 12%;" class="center">CONF.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="center">01</td>
+                                <td><span class="line-blank"></span></td>
+                                <td>________ m</td>
+                                <td class="center"><span class="check-box-small"></span></td>
+                            </tr>
+                            <tr>
+                                <td class="center">02</td>
+                                <td><span class="line-blank"></span></td>
+                                <td>________ m</td>
+                                <td class="center"><span class="check-box-small"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tec-footer">
+                    <span>CONTROLE INTERNO • EXPEDIÇÃO DE TECIDOS</span>
+                    <span>EXP-TEC-001 • Rev. 00</span>
+                    <span>Página 1</span>
+                </div>
+            `;
+            container.appendChild(page1);
+
+            // ================= PÁGINA 2 =================
+            const page2 = document.createElement('div');
+            page2.className = 'sheet';
+
+            let rolosRowsPage2 = '';
+            for (let i = 3; i <= 20; i++) {
+                const numStr = String(i).padStart(2, '0');
+                rolosRowsPage2 += `
+                    <tr>
+                        <td class="center" style="font-weight: 700; height: 12.5mm;">${numStr}</td>
+                        <td><span class="line-blank"></span></td>
+                        <td>________ m</td>
+                        <td class="center"><span class="check-box-small"></span></td>
+                    </tr>
+                `;
+            }
+
+            page2.innerHTML = `
+                <div class="sheet-body">
+                    <div class="doc-page-badge">Página 2</div>
+                    <table class="tec-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 8%;" class="center">Nº</th>
+                                <th style="width: 58%;">TECIDO</th>
+                                <th style="width: 22%;">METRAGEM</th>
+                                <th style="width: 12%;" class="center">CONF.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rolosRowsPage2}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tec-footer">
+                    <span>CONTROLE INTERNO • EXPEDIÇÃO DE TECIDOS</span>
+                    <span>EXP-TEC-001 • Rev. 00</span>
+                    <span>Página 2</span>
+                </div>
+            `;
+            container.appendChild(page2);
+
+            // ================= PÁGINA 3 =================
+            const page3 = document.createElement('div');
+            page3.className = 'sheet';
+
+            page3.innerHTML = `
+                <div class="sheet-body">
+                    <div class="doc-page-badge">Página 3</div>
+                    <div class="doc-header-center">
+                        <h1>CHECKLIST DE ENVIO DE TECIDOS</h1>
+                        <p>Continuação — Controle Interno de Expedição</p>
+                    </div>
+
+                    <!-- 5. SUBSTITUIÇÃO DE TECIDO -->
+                    <div class="tec-section-title">5. SUBSTITUIÇÃO DE TECIDO</div>
+                    <table class="tec-table" style="margin-bottom: 12px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 33%;">TECIDO ORIGINAL</th>
+                                <th style="width: 33%;">SUBSTITUIÇÃO</th>
+                                <th style="width: 34%;">AUTORIZAÇÃO / ASSINATURA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td></tr>
+                            <tr><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td></tr>
+                            <tr><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td></tr>
+                            <tr><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td></tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 6. AUTORIZAÇÃO DE ENVIO — DIVERGÊNCIA / QUALIDADE -->
+                    <div class="tec-section-title">6. AUTORIZAÇÃO DE ENVIO — DIVERGÊNCIA / QUALIDADE</div>
+                    <table class="tec-table" style="margin-bottom: 12px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">TECIDO</th>
+                                <th style="width: 45%;">DESCRIÇÃO DA OBSERVAÇÃO / DIVERGÊNCIA</th>
+                                <th style="width: 30%;">ASSINATURA DA AUTORIZAÇÃO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td></tr>
+                            <tr><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td></tr>
+                            <tr><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td></tr>
+                            <tr><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td><td><span class="line-blank"></span></td></tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 7. OBSERVAÇÕES GERAIS -->
+                    <div class="tec-section-title">7. OBSERVAÇÕES GERAIS</div>
+                    <table class="tec-table" style="margin-bottom: 14px;">
+                        <tbody>
+                            <tr><td style="height: 12px;"><span class="line-blank"></span></td></tr>
+                            <tr><td style="height: 12px;"><span class="line-blank"></span></td></tr>
+                            <tr><td style="height: 12px;"><span class="line-blank"></span></td></tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 8. RESPONSÁVEIS PELO PROCESSO -->
+                    <div class="tec-section-title">8. RESPONSÁVEIS PELO PROCESSO</div>
+                    <table class="tec-table" style="margin-bottom: 10px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 33.33%;" class="center">SEPARADOR</th>
+                                <th style="width: 33.33%;" class="center">CONFERENTE</th>
+                                <th style="width: 33.33%;" class="center">RECEBEDOR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 10px 8px;">
+                                    <div style="margin-bottom: 6px;">Nome: __________________________</div>
+                                    <div style="margin-bottom: 6px;">Data: _____ / _____ / _________</div>
+                                    <div style="margin-bottom: 6px;">Hora: _____:_____</div>
+                                    <div>Assinatura: ___________________</div>
+                                </td>
+                                <td style="padding: 10px 8px;">
+                                    <div style="margin-bottom: 6px;">Nome: __________________________</div>
+                                    <div style="margin-bottom: 6px;">Data: _____ / _____ / _________</div>
+                                    <div style="margin-bottom: 6px;">Hora: _____:_____</div>
+                                    <div>Assinatura: ___________________</div>
+                                </td>
+                                <td style="padding: 10px 8px;">
+                                    <div style="margin-bottom: 6px;">Nome: __________________________</div>
+                                    <div style="margin-bottom: 6px;">Data: _____ / _____ / _________</div>
+                                    <div style="margin-bottom: 6px;">Hora: _____:_____</div>
+                                    <div>Assinatura: ___________________</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tec-footer">
+                    <span>CONTROLE INTERNO • EXPEDIÇÃO DE TECIDOS • EXP-TEC-001 • Rev. 00</span>
+                    <span></span>
+                    <span>Página 3</span>
+                </div>
+            `;
+            container.appendChild(page3);
+        }
+
+        // Exportação vetorial via jsPDF
+        function exportTecidosPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 12;
+            const contentWidth = pageWidth - 2 * margin;
+
+            const opsArray = (tecidosData.ops || []).map(o => o.op);
+            const opsStr = opsArray.join('_');
+            const totalPecas = getTotalDocumentoPecas();
+            const consolidated = getConsolidatedMaterials();
+
+            const grayHeader = [209, 213, 219];
+            const grayLight = [243, 244, 246];
+            const borderColor = [107, 114, 128];
+
+            doc.setDrawColor(...borderColor);
+            doc.setLineWidth(0.2);
+
+            // ================= PAGE 1 =================
+            let y = 12;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(75, 85, 99);
+            doc.text('Página 1', pageWidth - margin, y, { align: 'right' });
+            y += 4;
+
+            doc.setFontSize(13);
+            doc.setTextColor(0, 0, 0);
+            doc.text('CHECKLIST DE ENVIO DE TECIDOS', pageWidth / 2, y + 2, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.text('Controle Interno de Expedição — Produção', pageWidth / 2, y + 6.5, { align: 'center' });
+            y += 11;
+
+            // Metadados
+            doc.rect(margin, y, contentWidth, 6);
+            const metaColW = contentWidth / 6;
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, metaColW, 6, 'F');
+            doc.rect(margin + 2 * metaColW, y, metaColW, 6, 'F');
+            doc.rect(margin + 4 * metaColW, y, metaColW, 6, 'F');
+            for (let i = 1; i < 6; i++) doc.line(margin + i * metaColW, y, margin + i * metaColW, y + 6);
+
+            doc.setFontSize(6.5);
+            doc.setFont('helvetica', 'bold');
+            doc.text('DOCUMENTO', margin + metaColW / 2, y + 4, { align: 'center' });
+            doc.text(tecidosData.docNumero, margin + 1.5 * metaColW, y + 4, { align: 'center' });
+            doc.text('REVISÃO', margin + 2.5 * metaColW, y + 4, { align: 'center' });
+            doc.text(tecidosData.revisao, margin + 3.5 * metaColW, y + 4, { align: 'center' });
+            doc.text('DATA', margin + 4.5 * metaColW, y + 4, { align: 'center' });
+            doc.text(tecidosData.data, margin + 5.5 * metaColW, y + 4, { align: 'center' });
+            y += 9;
+
+            // DADOS DO ENVIO
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 5, 'FD');
+            doc.text('DADOS DO ENVIO', margin + 2, y + 3.5);
+            y += 5;
+
+            const shipColW = contentWidth / 3;
+            doc.rect(margin, y, contentWidth, 10);
+            doc.line(margin + shipColW, y, margin + shipColW, y + 10);
+            doc.line(margin + 2 * shipColW, y, margin + 2 * shipColW, y + 10);
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 4, 'FD');
+            doc.line(margin + shipColW, y, margin + shipColW, y + 4);
+            doc.line(margin + 2 * shipColW, y, margin + 2 * shipColW, y + 4);
+
+            doc.text('NÚMERO DA NOTA FISCAL', margin + 2, y + 3);
+            doc.text('DATA DO ENVIO', margin + shipColW + 2, y + 3);
+            doc.text('DESTINO', margin + 2 * shipColW + 2, y + 3);
+
+            doc.setFont('helvetica', 'normal');
+            doc.text('____ / ____ / ________', margin + shipColW + 2, y + 8);
+
+            y += 10;
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 4, 'FD');
+            doc.line(margin + shipColW, y, margin + shipColW, y + 4);
+            doc.setFont('helvetica', 'bold');
+            doc.text('QUANTIDADE DE OPs NO DOCUMENTO', margin + 2, y + 3);
+            doc.text('OPs AGRUPADAS', margin + shipColW + 2, y + 3);
+            y += 4;
+            doc.rect(margin, y, contentWidth, 6);
+            doc.line(margin + shipColW, y, margin + shipColW, y + 6);
+            doc.text(`${tecidosData.ops.length} OPs`, margin + 2, y + 4);
+            doc.text(opsArray.join(' • '), margin + shipColW + 2, y + 4);
+            y += 9;
+
+            // 1. IDENTIFICAÇÃO DA PRODUÇÃO
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 5, 'FD');
+            doc.text('1. IDENTIFICAÇÃO DA PRODUÇÃO — OPs AGRUPADAS', margin + 2, y + 3.5);
+            y += 5;
+
+            const idColW = [22, 68, 48, 30, 18];
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 4.5, 'FD');
+            let cx = margin;
+            ['OP', 'REFERÊNCIA / PEÇA', 'PEDIDO', 'COR', 'QTD. PEÇAS'].forEach((h, i) => {
+                doc.text(h, cx + (i === 0 || i === 4 ? idColW[i] / 2 : 2), y + 3.2, { align: (i === 0 || i === 4 ? 'center' : 'left') });
+                cx += idColW[i];
+            });
+            y += 4.5;
+
+            doc.setFont('helvetica', 'normal');
+            tecidosData.ops.forEach(o => {
+                doc.rect(margin, y, contentWidth, 5);
+                cx = margin;
+                doc.text(o.op, cx + idColW[0] / 2, y + 3.5, { align: 'center' }); cx += idColW[0];
+                doc.text(o.referencia.substring(0, 38), cx + 2, y + 3.5); cx += idColW[1];
+                doc.text(o.pedidos.substring(0, 30), cx + 2, y + 3.5); cx += idColW[2];
+                doc.text(o.cor.substring(0, 18), cx + 2, y + 3.5); cx += idColW[3];
+                doc.setFont('helvetica', 'bold');
+                doc.text(String(o.qtdPecas), cx + idColW[4] / 2, y + 3.5, { align: 'center' });
+                doc.setFont('helvetica', 'normal');
+                y += 5;
+            });
+
+            // Linha Total
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 5, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.text('TOTAL DO DOCUMENTO', margin + contentWidth - idColW[4] - 4, y + 3.5, { align: 'right' });
+            doc.text(String(totalPecas), margin + contentWidth - idColW[4] / 2, y + 3.5, { align: 'center' });
+            y += 8;
+
+            // 2. GRADE DAS REFERÊNCIAS
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 4.5, 'FD');
+            doc.text('2. GRADE DAS REFERÊNCIAS', margin + 2, y + 3.2);
+            y += 4.5;
+
+            const grW = [18, 70, 10, 10, 10, 10, 10, 10, 10, 14, 14];
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 4, 'FD');
+            cx = margin;
+            ['OP', 'REFERÊNCIA', '34', '36', '38', '40', '42', '44', '46', 'U', 'TOTAL'].forEach((h, i) => {
+                doc.text(h, cx + (i === 1 ? 2 : grW[i] / 2), y + 3, { align: (i === 1 ? 'left' : 'center') });
+                cx += grW[i];
+            });
+            y += 4;
+
+            doc.setFont('helvetica', 'normal');
+            tecidosData.ops.forEach(o => {
+                doc.rect(margin, y, contentWidth, 4.5);
+                cx = margin;
+                doc.text(o.op, cx + grW[0] / 2, y + 3.2, { align: 'center' }); cx += grW[0];
+                doc.text(o.referencia.substring(0, 38), cx + 2, y + 3.2); cx += grW[1];
+                const g = o.grades || {};
+                const sizeKeys = ['34', '36', '38', '40', '42', '44', '46'];
+                for (let k = 2; k < 9; k++) {
+                    const val = g[sizeKeys[k - 2]] !== undefined ? String(g[sizeKeys[k - 2]]) : '—';
+                    doc.text(val, cx + grW[k] / 2, y + 3.2, { align: 'center' });
+                    cx += grW[k];
+                }
+                const valU = g['U'] !== undefined ? String(g['U']) : (o.qtdPecas !== undefined ? String(o.qtdPecas) : '—');
+                doc.setFont('helvetica', 'bold');
+                doc.text(valU, cx + grW[9] / 2, y + 3.2, { align: 'center' }); cx += grW[9];
+                const valTot = g['total'] !== undefined ? String(g['total']) : String(o.qtdPecas || 0);
+                doc.text(valTot, cx + grW[10] / 2, y + 3.2, { align: 'center' });
+                doc.setFont('helvetica', 'normal');
+                y += 4.5;
+            });
+            y += 1.5;
+            doc.setFontSize(5.5);
+            doc.setFont('helvetica', 'italic');
+            doc.text('Observação: produtos de tamanho único (ex.: bolsas e acessórios) exibem a quantidade na coluna "U". Para peças de vestuário com grade 34–46, os dados são distribuídos por numeração.', margin, y + 2.5);
+            y += 5.5;
+
+            // 3. LISTA CONSOLIDADA
+            doc.setFontSize(6.5);
+            doc.setFont('helvetica', 'bold');
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 4.5, 'FD');
+            doc.text('3. LISTA CONSOLIDADA DE MATÉRIA-PRIMA — TECIDOS', margin + 2, y + 3.2);
+            y += 4.5;
+
+            const consW = [30, 84, 46, 26];
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 4, 'FD');
+            cx = margin;
+            ['CÓDIGO', 'DESCRIÇÃO DO TECIDO', 'COR / ESTAMPA', 'QTD. TOTAL'].forEach((h, i) => {
+                doc.text(h, cx + (i === 0 ? consW[i] / 2 : (i === 3 ? consW[i] - 2 : 2)), y + 3, { align: (i === 0 ? 'center' : (i === 3 ? 'right' : 'left')) });
+                cx += consW[i];
+            });
+            y += 4;
+
+            doc.setFont('helvetica', 'normal');
+            consolidated.forEach(m => {
+                doc.rect(margin, y, contentWidth, 4.5);
+                cx = margin;
+                doc.text(m.codigo, cx + consW[0] / 2, y + 3.2, { align: 'center' }); cx += consW[0];
+                doc.text(m.descricao.substring(0, 48), cx + 2, y + 3.2); cx += consW[1];
+                doc.text(m.cor.substring(0, 26), cx + 2, y + 3.2); cx += consW[2];
+                doc.setFont('helvetica', 'bold');
+                doc.text(`${m.consumoTotal.toFixed(2).replace('.', ',')} ${m.un}`, cx + consW[3] - 2, y + 3.2, { align: 'right' });
+                doc.setFont('helvetica', 'normal');
+                y += 4.5;
+            });
+            y += 3;
+
+            // 4. CHECKLIST DOS ROLOS (Pág 1: 01 e 02)
+            doc.setFont('helvetica', 'bold');
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 4.5, 'FD');
+            doc.text('4. CHECKLIST FÍSICO DOS ROLOS', margin + 2, y + 3.2);
+            y += 4.5;
+
+            const roloW = [16, 110, 40, 20];
+            for (let r = 1; r <= 2; r++) {
+                doc.rect(margin, y, contentWidth, 5.5);
+                cx = margin;
+                doc.text(String(r).padStart(2, '0'), cx + roloW[0] / 2, y + 3.8, { align: 'center' }); cx += roloW[0];
+                doc.line(cx + 2, y + 4.2, cx + roloW[1] - 4, y + 4.2); cx += roloW[1];
+                doc.text('________ m', cx + 4, y + 3.8); cx += roloW[2];
+                doc.rect(cx + roloW[3] / 2 - 2, y + 1.5, 4, 4);
+                y += 5.5;
+            }
+
+            // Rodapé Pág 1
+            doc.setFontSize(6);
+            doc.text('CONTROLE INTERNO • EXPEDIÇÃO DE TECIDOS', margin, pageHeight - 8);
+            doc.text('EXP-TEC-001 • Rev. 00', pageWidth / 2, pageHeight - 8, { align: 'center' });
+            doc.text('Página 1', pageWidth - margin, pageHeight - 8, { align: 'right' });
+
+            // ================= PAGE 2 =================
+            doc.addPage();
+            y = 14;
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Página 2', pageWidth - margin, y, { align: 'right' });
+            y += 6;
+
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 5, 'FD');
+            cx = margin;
+            ['Nº', 'TECIDO', 'METRAGEM', 'CONF.'].forEach((h, i) => {
+                doc.text(h, cx + (i === 0 || i === 3 ? roloW[i] / 2 : 4), y + 3.5, { align: (i === 0 || i === 3 ? 'center' : 'left') });
+                cx += roloW[i];
+            });
+            y += 5;
+
+            for (let r = 3; r <= 20; r++) {
+                doc.rect(margin, y, contentWidth, 13.5);
+                cx = margin;
+                doc.text(String(r).padStart(2, '0'), cx + roloW[0] / 2, y + 8, { align: 'center' }); cx += roloW[0];
+                doc.line(cx + 4, y + 9, cx + roloW[1] - 6, y + 9); cx += roloW[1];
+                doc.text('________ m', cx + 4, y + 8); cx += roloW[2];
+                doc.rect(cx + roloW[3] / 2 - 2.5, y + 5, 5, 5);
+                y += 13.5;
+            }
+
+            // Rodapé Pág 2
+            doc.setFontSize(6);
+            doc.text('CONTROLE INTERNO • EXPEDIÇÃO DE TECIDOS', margin, pageHeight - 8);
+            doc.text('EXP-TEC-001 • Rev. 00', pageWidth / 2, pageHeight - 8, { align: 'center' });
+            doc.text('Página 2', pageWidth - margin, pageHeight - 8, { align: 'right' });
+
+            // ================= PAGE 3 =================
+            doc.addPage();
+            y = 14;
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Página 3', pageWidth - margin, y, { align: 'right' });
+            y += 4;
+
+            doc.setFontSize(13);
+            doc.text('CHECKLIST DE ENVIO DE TECIDOS', pageWidth / 2, y + 2, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.text('Continuação — Controle Interno de Expedição', pageWidth / 2, y + 6.5, { align: 'center' });
+            y += 14;
+
+            // 5. SUBSTITUIÇÃO DE TECIDO
+            doc.setFontSize(6.5);
+            doc.setFont('helvetica', 'bold');
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 5, 'FD');
+            doc.text('5. SUBSTITUIÇÃO DE TECIDO', margin + 2, y + 3.5);
+            y += 5;
+
+            const subW = contentWidth / 3;
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 4.5, 'FD');
+            doc.text('TECIDO ORIGINAL', margin + 4, y + 3.2);
+            doc.text('SUBSTITUIÇÃO', margin + subW + 4, y + 3.2);
+            doc.text('AUTORIZAÇÃO / ASSINATURA', margin + 2 * subW + 4, y + 3.2);
+            y += 4.5;
+
+            for (let s = 0; s < 4; s++) {
+                doc.rect(margin, y, contentWidth, 9);
+                doc.line(margin + subW, y, margin + subW, y + 9);
+                doc.line(margin + 2 * subW, y, margin + 2 * subW, y + 9);
+                doc.line(margin + 4, y + 6, margin + subW - 4, y + 6);
+                doc.line(margin + subW + 4, y + 6, margin + 2 * subW - 4, y + 6);
+                doc.line(margin + 2 * subW + 4, y + 6, margin + contentWidth - 4, y + 6);
+                y += 9;
+            }
+            y += 6;
+
+            // 6. AUTORIZAÇÃO DE ENVIO
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 5, 'FD');
+            doc.text('6. AUTORIZAÇÃO DE ENVIO — DIVERGÊNCIA / QUALIDADE', margin + 2, y + 3.5);
+            y += 5;
+
+            const divW = [46, 90, 50];
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 4.5, 'FD');
+            doc.text('TECIDO', margin + 4, y + 3.2);
+            doc.text('DESCRIÇÃO DA OBSERVAÇÃO / DIVERGÊNCIA', margin + divW[0] + 4, y + 3.2);
+            doc.text('ASSINATURA DA AUTORIZAÇÃO', margin + divW[0] + divW[1] + 4, y + 3.2);
+            y += 4.5;
+
+            for (let d = 0; d < 4; d++) {
+                doc.rect(margin, y, contentWidth, 9);
+                doc.line(margin + divW[0], y, margin + divW[0], y + 9);
+                doc.line(margin + divW[0] + divW[1], y, margin + divW[0] + divW[1], y + 9);
+                doc.line(margin + 4, y + 6, margin + divW[0] - 4, y + 6);
+                doc.line(margin + divW[0] + 4, y + 6, margin + divW[0] + divW[1] - 4, y + 6);
+                doc.line(margin + divW[0] + divW[1] + 4, y + 6, margin + contentWidth - 4, y + 6);
+                y += 9;
+            }
+            y += 6;
+
+            // 7. OBSERVAÇÕES GERAIS
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 5, 'FD');
+            doc.text('7. OBSERVAÇÕES GERAIS', margin + 2, y + 3.5);
+            y += 5;
+            doc.rect(margin, y, contentWidth, 20);
+            doc.line(margin + 4, y + 6, margin + contentWidth - 4, y + 6);
+            doc.line(margin + 4, y + 12, margin + contentWidth - 4, y + 12);
+            doc.line(margin + 4, y + 18, margin + contentWidth - 4, y + 18);
+            y += 24;
+
+            // 8. RESPONSÁVEIS PELO PROCESSO
+            doc.setFillColor(...grayHeader);
+            doc.rect(margin, y, contentWidth, 5, 'FD');
+            doc.text('8. RESPONSÁVEIS PELO PROCESSO', margin + 2, y + 3.5);
+            y += 5;
+
+            const respW = contentWidth / 3;
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 4.5, 'FD');
+            doc.text('SEPARADOR', margin + respW / 2, y + 3.2, { align: 'center' });
+            doc.text('CONFERENTE', margin + 1.5 * respW, y + 3.2, { align: 'center' });
+            doc.text('RECEBEDOR', margin + 2.5 * respW, y + 3.2, { align: 'center' });
+            y += 4.5;
+
+            doc.rect(margin, y, contentWidth, 24);
+            doc.line(margin + respW, y, margin + respW, y + 24);
+            doc.line(margin + 2 * respW, y, margin + 2 * respW, y + 24);
+
+            doc.setFont('helvetica', 'normal');
+            for (let i = 0; i < 3; i++) {
+                const rx = margin + i * respW + 4;
+                doc.text('Nome: __________________________', rx, y + 6);
+                doc.text('Data: _____ / _____ / _________', rx, y + 11);
+                doc.text('Hora: _____:_____', rx, y + 16);
+                doc.text('Assinatura: ___________________', rx, y + 21);
+            }
+
+            // Rodapé Pág 3
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6);
+            doc.text('CONTROLE INTERNO • EXPEDIÇÃO DE TECIDOS • EXP-TEC-001 • Rev. 00', margin, pageHeight - 8);
+            doc.text('Página 3', pageWidth - margin, pageHeight - 8, { align: 'right' });
+
+            // Nome do arquivo dinâmico
+            const fileName = `Checklist_Envio_Tecidos_Piloto_OPs_${opsStr}.pdf`;
+            doc.save(fileName);
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTecidosPages();
+        });
+    </script>
+</body>
+</html>

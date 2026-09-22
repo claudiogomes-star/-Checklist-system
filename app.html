@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PATBO — Checklist de Aviamentos (EXP-AVI-001)</title>
+    <link rel="icon" type="image/png" href="public/logo-patbo.png">
+    <!-- PDF.js e jsPDF via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --patbo-navy: #1F2937;
+            --patbo-navy-dark: #111827;
+            --patbo-navy-light: #374151;
+            --patbo-gray-header: #D1D5DB;
+            --patbo-gray-light: #F3F4F6;
+            --patbo-gray-alt: #F9FAFB;
+            --patbo-border: #9CA3AF;
+            --patbo-border-dark: #4B5563;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0F172A;
+            color: #1E293B;
+            min-height: 100vh;
+        }
+
+        /* HEADER DE NAVEGAÇÃO */
+        .app-header {
+            background: #1E293B;
+            border-bottom: 1px solid #334155;
+            padding: 12px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .btn-voltar {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #94A3B8;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+
+        .btn-voltar:hover {
+            color: white;
+            background: rgba(255,255,255,0.12);
+        }
+
+        /* Abas de Módulo */
+        .module-switcher {
+            display: flex;
+            background: #0F172A;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 3px;
+            gap: 4px;
+        }
+
+        .module-tab {
+            padding: 6px 14px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #94A3B8;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .module-tab:hover {
+            color: white;
+        }
+
+        .module-tab.active {
+            background: #1B365D;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-secondary {
+            background: #334155;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-accent {
+            background: #3B82F6;
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: #2563EB;
+        }
+
+        .btn-primary {
+            background: #10B981;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #059669;
+        }
+
+        /* ÁREA DE TRABALHO */
+        .workspace {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        /* PAINEL LATERAL */
+        .control-panel {
+            width: 340px;
+            flex-shrink: 0;
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 24px;
+            color: white;
+        }
+
+        .control-panel h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #F8FAFC;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .upload-dropzone {
+            border: 2px dashed #475569;
+            border-radius: 12px;
+            padding: 24px 16px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(15, 23, 42, 0.4);
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-dropzone:hover, .upload-dropzone.drag-over {
+            border-color: #3B82F6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .upload-icon {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 10px;
+            color: #93C5FD;
+        }
+
+        .upload-dropzone p {
+            font-size: 13px;
+            color: #94A3B8;
+            margin-top: 6px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34D399;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .info-card {
+            background: #0F172A;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+            font-size: 12px;
+        }
+
+        .info-card-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #94A3B8;
+        }
+
+        .info-card-row strong {
+            color: #F1F5F9;
+        }
+
+        .info-card-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .help-box {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3B82F6;
+            padding: 12px;
+            border-radius: 0 8px 8px 0;
+            font-size: 12px;
+            color: #93C5FD;
+            line-height: 1.5;
+        }
+
+        /* CONTAINER DAS FOLHAS A4 */
+        .preview-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            padding: 12mm 15mm;
+            margin-bottom: 30px;
+            position: relative;
+            box-sizing: border-box;
+            color: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .sheet-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ESTILOS DO DOCUMENTO */
+        .doc-page-badge {
+            text-align: right;
+            font-size: 8px;
+            font-weight: 700;
+            color: #4B5563;
+            margin-bottom: 4px;
+        }
+
+        .doc-header-center {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .doc-header-center h1 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #000;
+            text-transform: uppercase;
+            letter-spacing: -0.2px;
+        }
+
+        .doc-header-center p {
+            font-size: 9px;
+            color: #4B5563;
+            margin-top: 2px;
+        }
+
+        .doc-meta-bar {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--patbo-border-dark);
+            margin-bottom: 12px;
+            font-size: 8px;
+            text-align: center;
+        }
+
+        .doc-meta-bar td {
+            border: 1px solid var(--patbo-border-dark);
+            padding: 4px 6px;
+        }
+
+        .doc-meta-bar td.label {
+            background-color: var(--patbo-gray-header);
+            font-weight: 800;
+            text-transform: uppercase;
+            width: 18%;
+        }
+
+        .doc-meta-bar td.val {
+            font-weight: 700;
+            width: 15%;
+        }
+
+        /* Tabelas de materiais */
+        .materials-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--patbo-border-dark);
+            font-size: 8.5px;
+            margin-bottom: 8px;
+        }
+
+        .materials-table th {
+            background-color: var(--patbo-gray-header);
+            border: 1px solid var(--patbo-border-dark);
+            padding: 6px 5px;
+            font-size: 7.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #000;
+            text-align: left;
+        }
+
+        .materials-table th.center, .materials-table td.center {
+            text-align: center;
+        }
+
+        .materials-table th.right, .materials-table td.right {
+            text-align: right;
+        }
+
+        .materials-table td {
+            border: 1px solid var(--patbo-border-dark);
+            padding: 5px;
+            color: #000;
+            vertical-align: middle;
+        }
+
+        .materials-table tr:nth-child(even) {
+            background-color: var(--patbo-gray-alt);
+        }
+
+        /* Seções e Tabelas gerais */
+        .tec-section-title {
+            background-color: var(--patbo-gray-header);
+            border: 1px solid var(--patbo-border-dark);
+            border-bottom: none;
+            padding: 4px 8px;
+            font-size: 8.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #000;
+        }
+
+        .tec-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--patbo-border-dark);
+            font-size: 7.5px;
+            margin-bottom: 12px;
+        }
+
+        .tec-table th {
+            background-color: var(--patbo-gray-header);
+            border: 1px solid var(--patbo-border-dark);
+            padding: 4px 5px;
+            font-size: 7.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #000;
+            text-align: left;
+        }
+
+        .tec-table th.center, .tec-table td.center {
+            text-align: center;
+        }
+
+        .tec-table td {
+            border: 1px solid var(--patbo-border-dark);
+            padding: 4px 5px;
+            color: #000;
+            vertical-align: middle;
+        }
+
+        .tec-table tr:nth-child(even) {
+            background-color: var(--patbo-gray-alt);
+        }
+
+        .tec-table tr.total-row {
+            background-color: var(--patbo-gray-light);
+            font-weight: 800;
+        }
+
+        .editable-cell {
+            outline: none;
+            cursor: text;
+        }
+
+        .editable-cell:hover, .editable-cell:focus {
+            background: #FEF08A;
+        }
+
+        .line-blank {
+            display: inline-block;
+            width: 100%;
+            border-bottom: 1px solid #000;
+            height: 12px;
+        }
+
+        .check-box-small {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border: 1px solid #000;
+            background: #FFF;
+            vertical-align: middle;
+        }
+
+        .obs-box {
+            min-height: 48px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        /* Tabela de responsáveis */
+        .resp-table td {
+            height: 46px;
+        }
+
+        /* Rodapé */
+        .tec-footer {
+            border-top: 1px solid #9CA3AF;
+            padding-top: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 6.5px;
+            color: #4B5563;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Botões de ação nas linhas de materiais */
+        .btn-del-row {
+            background: #FEE2E2;
+            color: #DC2626;
+            border: 1px solid #FECACA;
+            border-radius: 4px;
+            font-size: 11px;
+            padding: 2px 5px;
+            cursor: pointer;
+            line-height: 1;
+            transition: all 0.15s;
+        }
+
+        .btn-del-row:hover {
+            background: #DC2626;
+            color: white;
+        }
+
+        .btn-add-row-container {
+            text-align: center;
+            margin: 6px 0;
+        }
+
+        .btn-add-row {
+            background: #EFF6FF;
+            color: #2563EB;
+            border: 1px solid #BFDBFE;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 5px 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-add-row:hover {
+            background: #2563EB;
+            color: white;
+        }
+
+        /* Impressão */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .app-header, .control-panel, .no-print, .btn-del-row, .btn-add-row-container {
+                display: none !important;
+            }
+
+            .workspace {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: none !important;
+                display: block !important;
+            }
+
+            .preview-container {
+                display: block !important;
+                width: 100% !important;
+            }
+
+            .sheet {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 10mm 12mm !important;
+                width: 100% !important;
+                height: 100vh !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                border: none !important;
+            }
+
+            .sheet:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BARRA SUPERIOR -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <a href="index.html" class="btn-voltar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Início
+                </a>
+                <img src="public/logo-patbo.png" alt="PatBO Logo" style="height: 26px; width: auto; object-fit: contain; filter: brightness(0) invert(1);">
+                <div class="header-title" style="font-size: 14px; font-weight: 700; color: white; margin-left: 2px;">
+                    <span>PATBO &bull; Expedição</span>
+                </div>
+
+                <!-- Alternador de Módulos -->
+                <nav class="module-switcher">
+                    <a href="app.html" class="module-tab active">
+                        <span>🧵</span> Aviamentos
+                    </a>
+                    <a href="tecidos.html" class="module-tab">
+                        <span>🧶</span> Tecidos (EXP-TEC-001)
+                    </a>
+                </nav>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn-action btn-secondary" onclick="loadSampleData()" title="Carregar dados de exemplo">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    Carregar Exemplo
+                </button>
+
+                <button class="btn-action btn-accent" onclick="window.print()" title="Imprimir em A4 nativo">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    Imprimir / Salvar
+                </button>
+
+                <button class="btn-action btn-primary" onclick="exportJsPDF()" title="Baixar PDF vetorial">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Baixar PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- WORKSPACE -->
+    <div class="workspace">
+
+        <!-- PAINEL LATERAL -->
+        <aside class="control-panel">
+            <h3>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Importar OP de Aviamentos
+            </h3>
+
+            <!-- Dropzone para PDF -->
+            <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <polyline points="9 15 12 12 15 15"></polyline>
+                </svg>
+                <div style="font-weight: 700; font-size: 14px; color: #F1F5F9;">Clique ou arraste o PDF</div>
+                <p>Relatório Pré-Fase (Aviamentos)</p>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf" onchange="handleFileSelect(this.files)">
+            </div>
+
+            <div class="status-badge" id="statusBadge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span id="statusText">Exemplo carregado &bull; 15 materiais</span>
+            </div>
+
+            <!-- Resumo -->
+            <div class="info-card">
+                <div class="info-card-row"><span>OP:</span> <strong id="cardOP">284364</strong></div>
+                <div class="info-card-row"><span>Referência:</span> <strong id="cardRef" style="font-size: 11px;">C26BOBOL34737 - BOLSA PATBO</strong></div>
+                <div class="info-card-row"><span>Total de Peças:</span> <strong id="cardPecas">21 peças</strong></div>
+                <div class="info-card-row"><span>Total Materiais:</span> <strong id="cardMateriais">15 itens</strong></div>
+                <div class="info-card-row"><span>Documento:</span> <strong>EXP-AVI-001 (Rev 00)</strong></div>
+            </div>
+
+            <div class="help-box">
+                💡 <strong>Leitura Inteligente:</strong> O sistema extrai automaticamente todos os materiais, quantidades e cores do PDF do Millennium. Você pode editar qualquer campo clicando nele, e excluir ou adicionar linhas.
+            </div>
+        </aside>
+
+        <!-- CONTAINER DAS PÁGINAS A4 -->
+        <main class="preview-container" id="sheetsContainer">
+            <!-- As páginas serão renderizadas via JavaScript -->
+        </main>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Data atual formatada
+        const hoje = new Date();
+        const dataHoje = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+
+        // Estrutura de dados
+        let checklistData = {
+            docNumero: 'EXP-AVI-001',
+            revisao: '00',
+            data: dataHoje,
+            op: '284364',
+            referencia: 'C26BOBOL34737 - BOLSA PATBO',
+            pedidos: '000000249100 / 000000249104',
+            cor: '00699 BEGE CLARO',
+            qtdPecas: 21,
+            grades: { '34': '—', '36': '—', '38': '—', '40': '—', '42': '—', '44': '—', '46': '—', 'U': 21, 'total': 21 },
+            dynamicSizeHeaders: null,
+            materiais: [
+                { codigo: '0000218227', descricao: 'ETIQUETA INSTRUCAO LAVAGEM', cor: '00023 PRETO', tam: 'U', consumo: '1,00', un: 'UN' },
+                { codigo: '0000119469', descricao: 'PAPEL SEDA PERSONALIZADO', cor: '10010 BRANCO', tam: 'U', consumo: '2,00', un: 'UN' },
+                { codigo: '00002490', descricao: 'TAG CARTAO PRETO', cor: '00023 PRETO', tam: 'U', consumo: '1,00', un: 'UN' },
+                { codigo: '00003588', descricao: 'SACO PLASTICO TRANSP', cor: '00000 TRANSPARENTE', tam: 'U', consumo: '1,00', un: 'UN' },
+                { codigo: '0000154798', descricao: 'ADESIVO LACRE PATBO', cor: '00023 PRETO', tam: 'U', consumo: '1,00', un: 'UN' },
+                { codigo: '000074564', descricao: 'ETIQUETA COMPOSICAO', cor: '00023 PRETO', tam: 'U', consumo: '1,00', un: 'UN' },
+                { codigo: '0000195847', descricao: 'FITA GORGURAO 10MM', cor: '00023 PRETO', tam: 'U', consumo: '0,40', un: 'MT' },
+                { codigo: '00001852', descricao: 'LINHA COSTURA 120', cor: '00023 PRETO', tam: 'U', consumo: '0,10', un: 'MT' },
+                { codigo: '00001864', descricao: 'ETIQUETA MARCA TECIDA', cor: '00023 PRETO', tam: 'U', consumo: '1,00', un: 'UN' },
+                { codigo: '000072349', descricao: 'CABIDE PLASTICO PRETO', cor: '00023 PRETO', tam: 'U', consumo: '1,00', un: 'UN' },
+                { codigo: '0000238695', descricao: 'SACOLA TNT PATBO', cor: '00023 PRETO', tam: 'U', consumo: '1,00', un: 'UN' },
+                { codigo: '0000205847', descricao: 'ELASTICO 15MM', cor: '00023 PRETO', tam: 'U', consumo: '0,60', un: 'MT' },
+                { codigo: '0000305123', descricao: 'BOTAO PRESSAO 10MM', cor: '00023 PRETO', tam: 'U', consumo: '4,00', un: 'UN' },
+                { codigo: '0000405678', descricao: 'ZIPER INVISIVEL 50CM', cor: '00023 PRETO', tam: 'U', consumo: '1,00', un: 'UN' },
+                { codigo: '0000512345', descricao: 'COLCHETE METAL N2', cor: '00111 NIQUEL', tam: 'U', consumo: '2,00', un: 'UN' }
+            ]
+        };
+
+        // ==========================================
+        // DRAG & DROP
+        // ==========================================
+        const dropzone = document.getElementById('dropzone');
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-over');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleFileSelect(e.dataTransfer.files);
+            }
+        });
+
+        // ==========================================
+        // EXTRAÇÃO ESPACIAL 2D (com dedup faux-bold)
+        // ==========================================
+        function extractSpatialLinesFromPage(textContent) {
+            if (!textContent || !textContent.items || textContent.items.length === 0) return '';
+
+            const TOLERANCE = 4.5;
+            const lineBuckets = [];
+
+            textContent.items.forEach(item => {
+                const str = item.str;
+                if (!str || !str.trim()) return;
+
+                const tx = item.transform[4];
+                const ty = item.transform[5];
+
+                let bucket = lineBuckets.find(b => Math.abs(b.y - ty) <= TOLERANCE);
+                if (!bucket) {
+                    bucket = { y: ty, items: [] };
+                    lineBuckets.push(bucket);
+                }
+                bucket.items.push({ x: tx, str: str.trim() });
+            });
+
+            // Ordena do topo para baixo (Y decrescente)
+            lineBuckets.sort((a, b) => b.y - a.y);
+
+            const lines = lineBuckets.map(bucket => {
+                bucket.items.sort((a, b) => a.x - b.x);
+                // Deduplica faux-bold do FastReport (mesma string, posição X muito próxima)
+                const deduped = [];
+                for (const item of bucket.items) {
+                    if (deduped.length > 0) {
+                        const last = deduped[deduped.length - 1];
+                        if (item.str === last.str && Math.abs(item.x - last.x) <= 4.0) {
+                            continue;
+                        }
+                    }
+                    deduped.push(item);
+                }
+                return deduped.map(i => i.str).join(' ');
+            });
+
+            return lines.join('\n');
+        }
+
+        // ==========================================
+        // PROCESSAMENTO DE PDF
+        // ==========================================
+        async function handleFileSelect(files) {
+            if (!files || files.length === 0) return;
+            document.getElementById('statusText').innerText = 'Processando PDF...';
+
+            try {
+                let allPagesSpatialText = [];
+
+                for (let f = 0; f < files.length; f++) {
+                    const file = files[f];
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                    for (let p = 1; p <= pdf.numPages; p++) {
+                        const page = await pdf.getPage(p);
+                        const textContent = await page.getTextContent();
+                        const pageSpatialText = extractSpatialLinesFromPage(textContent);
+                        allPagesSpatialText.push(pageSpatialText);
+                    }
+                }
+
+                const fullText = allPagesSpatialText.join('\n\n');
+                console.log('=== TEXTO EXTRAÍDO ===\n', fullText);
+
+                // Parsing da OP
+                const parsed = parseMillenniumPDF(fullText);
+                if (parsed && parsed.op) {
+                    // Extrai materiais
+                    const materiais = extractMaterialsFromText(fullText);
+
+                    checklistData.op = parsed.op;
+                    checklistData.referencia = parsed.referencia || 'PRODUTO PATBO';
+                    checklistData.pedidos = parsed.pedidos || '—';
+                    checklistData.cor = parsed.cor || 'ÚNICA';
+                    checklistData.qtdPecas = parsed.qtdPecas || 1;
+                    checklistData.grades = parsed.grades || { '34':'—','36':'—','38':'—','40':'—','42':'—','44':'—','46':'—','U': parsed.qtdPecas || 1, 'total': parsed.qtdPecas || 1 };
+                    checklistData.dynamicSizeHeaders = parsed.dynamicSizeHeaders || null;
+                    checklistData.materiais = materiais.length > 0 ? materiais : checklistData.materiais;
+
+                    renderSheets();
+                    updateSidebar();
+                    document.getElementById('statusText').innerText = `OP ${parsed.op} processada • ${checklistData.materiais.length} materiais`;
+                } else {
+                    alert('Nenhuma Ordem de Produção válida foi detectada no PDF.');
+                    document.getElementById('statusText').innerText = 'Falha no processamento';
+                }
+            } catch (err) {
+                console.error('Erro ao processar PDF:', err);
+                alert('Erro ao processar o PDF. Verifique o arquivo e tente novamente.');
+                document.getElementById('statusText').innerText = 'Erro no processamento';
+            }
+        }
+
+        // ==========================================
+        // PARSER MILLENNIUM
+        // ==========================================
+        function parseMillenniumPDF(fullText) {
+            const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) return null;
+
+            let op = '';
+            let referencia = 'PRODUTO PATBO';
+            let pedidos = '';
+            let cor = 'ÚNICA';
+            let qtdPecas = 0;
+            let dynamicSizeHeaders = null;
+
+            // 1. OP e Produto
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (l.includes('Agrupa por') || l.includes('Tipo do Produto') || l.includes('Seleção da Matéria-Prima') || l.includes('Status da Ordem')) {
+                    continue;
+                }
+
+                const comboMatch = l.match(/(?:Ordem|OP)\s*[:\[\s]*(\d{4,})\s+Produto\s*[:\s]+([^\n\r]+)/i);
+                if (comboMatch) {
+                    op = comboMatch[1];
+                    let raw = comboMatch[2].trim().split(/\b(?:Pré-Fase|Pedido|Início|Data)\b/i)[0].trim();
+                    if (raw && !raw.toLowerCase().startsWith('acabado')) {
+                        referencia = raw;
+                    }
+                    break;
+                }
+
+                if (!op) {
+                    const opMatch = l.match(/(?:Ordem(?:\s+de\s+Produção)?|OP)\s*[:\[\s]+(\d{4,})/i);
+                    if (opMatch) op = opMatch[1];
+                }
+            }
+
+            // 2. Produto individual
+            if (referencia === 'PRODUTO PATBO') {
+                for (let i = 0; i < lines.length; i++) {
+                    const l = lines[i];
+                    if (l.includes('Agrupa por') || l.includes('Tipo do Produto') || l.includes('Seleção da Matéria-Prima') || l.includes('Status da Ordem')) {
+                        continue;
+                    }
+                    if (/\bProduto\b/i.test(l)) {
+                        const prodMatch = l.match(/\bProduto\s*[:\s]+([^\n\r]+)/i);
+                        if (prodMatch) {
+                            let raw = prodMatch[1].trim().split(/\b(?:Pré-Fase|Pedido|Início|Data)\b/i)[0].trim();
+                            if (raw && !raw.toLowerCase().startsWith('acabado')) {
+                                referencia = raw;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!op) return null;
+
+            // 3. Pedidos
+            const pedidosList = [];
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (/\bPedido\b/i.test(l)) {
+                    const pNums = l.match(/\b\d{6,14}\b/g);
+                    if (pNums) pedidosList.push(...pNums);
+                    if (i + 1 < lines.length) {
+                        const nextPNums = lines[i + 1].match(/\b\d{6,14}\b/g);
+                        if (nextPNums) pedidosList.push(...nextPNums);
+                    }
+                    break;
+                }
+            }
+            pedidos = pedidosList.length > 0 ? pedidosList.join(' / ') : '—';
+
+            // 4. Cor
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (/Est\s*\.?\s*Cor|Cor\s*[:\s]/i.test(l)) {
+                    const targetLine = (i + 1 < lines.length && !lines[i + 1].includes('Total')) ? lines[i + 1] : l;
+                    const corMatch = targetLine.match(/(?:000|0|\d{1,4})?\s*([0-9]{3,7}\s*[A-Za-zÀ-Ú\s]+?)(?=\s+\d+|$)/i);
+                    if (corMatch) {
+                        let rawCor = corMatch[1].trim();
+                        const glued = rawCor.match(/^(\d{4,6})([A-Za-zÀ-Ú\s]+)$/);
+                        if (glued) {
+                            cor = `${glued[1]} ${glued[2].trim()}`;
+                        } else {
+                            cor = rawCor;
+                        }
+                    }
+                    break;
+                }
+            }
+
+            // 5. Quantidade total
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                const totalMatch = l.match(/(?:Total\s+de\s+Peças|Total\s+Oficina|Total\s+Geral)[\s:]+([0-9]+)/i);
+                if (totalMatch) {
+                    qtdPecas = parseInt(totalMatch[1], 10);
+                    break;
+                }
+            }
+            if (qtdPecas === 0) qtdPecas = 1;
+
+            // 6. Grade Dinâmica
+            let gradesObj = { '34': '—', '36': '—', '38': '—', '40': '—', '42': '—', '44': '—', '46': '—', 'U': qtdPecas, 'total': qtdPecas };
+
+            // Procura header com tamanhos dinâmicos
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                if (/Atuais/i.test(l) && (/Total|[*]/i.test(l))) {
+                    // Extrai tokens entre "Atuais" e "*" ou "Total"
+                    const afterAtuais = l.split(/Atuais/i)[1];
+                    if (afterAtuais) {
+                        const beforeEnd = afterAtuais.split(/[*]|Total/i)[0].trim();
+                        const sizeTokens = beforeEnd.split(/\s+/).filter(t => t.length > 0);
+                        
+                        if (sizeTokens.length >= 3) {
+                            // Converte XS/PP -> PP, S/P -> P, M/M -> M, L/G -> G, XL/GG -> GG
+                            const cleanSizes = sizeTokens.map(t => {
+                                if (t.includes('/')) {
+                                    return t.split('/').pop();
+                                }
+                                return t;
+                            });
+                            dynamicSizeHeaders = cleanSizes;
+
+                            // Agora busca a linha de valores (Total de Peças)
+                            for (let j = i + 1; j < lines.length; j++) {
+                                if (/Total\s+de\s+Peças/i.test(lines[j])) {
+                                    const nums = lines[j].match(/\b\d+\b/g);
+                                    if (nums) {
+                                        const nArr = nums.map(n => parseInt(n, 10));
+                                        // Cria grades dinâmicas
+                                        gradesObj = {};
+                                        cleanSizes.forEach((sz, idx) => {
+                                            gradesObj[sz] = idx < nArr.length ? nArr[idx] : '—';
+                                        });
+                                        // O total é o último número ou a soma
+                                        const totalIdx = nArr.length - 1;
+                                        gradesObj['total'] = nArr[totalIdx] || qtdPecas;
+                                        gradesObj['U'] = '—';
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Fallback: tenta grade numérica padrão
+            if (!dynamicSizeHeaders) {
+                for (let i = 0; i < lines.length; i++) {
+                    const l = lines[i];
+                    if (/Total\s+de\s+Peças|Qtdes\s+Atuais/i.test(l)) {
+                        const nums = l.match(/\b\d+\b/g);
+                        if (nums && nums.length >= 7) {
+                            const nArr = nums.map(n => parseInt(n, 10));
+                            gradesObj['34'] = nArr[0] !== undefined ? nArr[0] : '—';
+                            gradesObj['36'] = nArr[1] !== undefined ? nArr[1] : '—';
+                            gradesObj['38'] = nArr[2] !== undefined ? nArr[2] : '—';
+                            gradesObj['40'] = nArr[3] !== undefined ? nArr[3] : '—';
+                            gradesObj['42'] = nArr[4] !== undefined ? nArr[4] : '—';
+                            gradesObj['44'] = nArr[5] !== undefined ? nArr[5] : '—';
+                            gradesObj['46'] = nArr[6] !== undefined ? nArr[6] : '—';
+                            gradesObj['U'] = '—';
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return { op, referencia, pedidos, cor, qtdPecas, grades: gradesObj, dynamicSizeHeaders };
+        }
+
+        // ==========================================
+        // EXTRAÇÃO DE MATERIAIS
+        // ==========================================
+        function extractMaterialsFromText(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const materiais = [];
+
+            // Palavras protegidas — se a cor candidata começa com estas, não separar
+            const PRODUCT_WORDS = ['PATBO', 'SEDA', 'ETIQUETA', 'ELASTICO', 'ENVELOPE', 'ARCO', 'FECHO',
+                'BARBATANA', 'PEROLA', 'FITA', 'LINHA', 'REGULADOR', 'APLIQUE', 'FERRAGEM', 'MIÇANGA',
+                'PERSONALIZADO', 'PERSONALIZADA', 'INSTRUCAO', 'COMPOSICAO', 'MARCA', 'TECIDA'];
+
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                const tokens = l.split(/\s+/);
+
+                if (tokens.length >= 4 && /^\d{4,12}$/.test(tokens[0])) {
+                    const codigo = tokens[0];
+
+                    // Deduplica código (FastReport dobra o código às vezes)
+                    if (tokens.length > 1 && tokens[1] === codigo) {
+                        tokens.splice(1, 1);
+                    }
+
+                    let un = 'UN';
+                    let consumo = '0,00';
+                    let tam = 'U';
+                    let lastIdx = tokens.length - 1;
+
+                    // Unidade no final (MT, M, KG, UN, PC, RL, PA, etc.)
+                    if (/^[A-Za-z]{1,4}$/.test(tokens[lastIdx])) {
+                        un = tokens[lastIdx].toUpperCase();
+                        lastIdx--;
+                    }
+
+                    // Consumo
+                    if (lastIdx >= 1 && /^[\d.,]+$/.test(tokens[lastIdx])) {
+                        consumo = tokens[lastIdx].replace('.', ',');
+                        lastIdx--;
+                    }
+
+                    // Tamanho
+                    if (lastIdx >= 1 && /^(U|UNICA|\d{1,2}|PP|P|M|G|GG|\d+CM)$/i.test(tokens[lastIdx])) {
+                        tam = tokens[lastIdx].toUpperCase();
+                        lastIdx--;
+                    }
+
+                    // Remove "UNICA" e "000" (estampa padrão) se ainda restam
+                    if (lastIdx >= 1 && /^UNICA$/i.test(tokens[lastIdx])) {
+                        lastIdx--;
+                    }
+                    if (lastIdx >= 1 && /^\d{3,4}$/.test(tokens[lastIdx])) {
+                        // Pode ser código de estampa genérico (000, 0000)
+                        const possibleEstampa = tokens[lastIdx];
+                        if (/^0{3,4}$/.test(possibleEstampa)) {
+                            lastIdx--;
+                        }
+                    }
+
+                    // Tokens restantes = Descrição + Cor
+                    const remainingTokens = tokens.slice(1, lastIdx + 1);
+                    let middleStr = remainingTokens.join(' ').replace(/\s*000\s+UNICA\b/gi, '').trim();
+
+                    // Procura código de cor no final (3-8 dígitos seguidos de texto)
+                    const mCor = middleStr.match(/(\d{3,8}\s+[A-Za-zÀ-Ú][A-Za-zÀ-Ú\s]*)$/);
+                    let matCor = 'ÚNICA';
+                    let desc = middleStr;
+
+                    if (mCor) {
+                        const candidateCor = mCor[1].trim();
+                        // Verifica se a cor candidata contém palavra protegida
+                        const corWords = candidateCor.replace(/^\d+\s*/, '').trim().toUpperCase();
+                        const isProtected = PRODUCT_WORDS.some(pw => corWords.startsWith(pw));
+
+                        if (!isProtected) {
+                            matCor = candidateCor;
+                            desc = middleStr.substring(0, mCor.index).trim();
+                        }
+                    }
+
+                    if (desc) {
+                        materiais.push({
+                            codigo,
+                            descricao: desc,
+                            cor: matCor,
+                            tam,
+                            consumo,
+                            un
+                        });
+                    }
+                }
+            }
+
+            return materiais;
+        }
+
+        // ==========================================
+        // SPLIT DE MATERIAIS
+        // ==========================================
+        function getMaterialsSplitIndex() {
+            const total = checklistData.materiais.length;
+            if (total <= 16) return total; // Single page
+            if (total <= 28) return Math.ceil(total / 2);
+            return Math.min(18, Math.ceil(total * 0.55));
+        }
+
+        // ==========================================
+        // RENDERIZAÇÃO
+        // ==========================================
+        function renderSheets() {
+            const container = document.getElementById('sheetsContainer');
+            container.innerHTML = '';
+
+            const total = checklistData.materiais.length;
+            const splitIdx = getMaterialsSplitIndex();
+
+            if (splitIdx >= total) {
+                // Página única
+                container.appendChild(createPageOne(0, total, true, 1));
+            } else {
+                // Duas páginas
+                container.appendChild(createPageOne(0, splitIdx, false, 2));
+                container.appendChild(createPageTwo(splitIdx, total));
+            }
+
+            updateSidebar();
+        }
+
+        function updateSidebar() {
+            document.getElementById('cardOP').innerText = checklistData.op;
+            document.getElementById('cardRef').innerText = checklistData.referencia;
+            document.getElementById('cardPecas').innerText = `${checklistData.qtdPecas} peças`;
+            document.getElementById('cardMateriais').innerText = `${checklistData.materiais.length} itens`;
+        }
+
+        // ==========================================
+        // PÁGINA 1
+        // ==========================================
+        function createPageOne(startIdx, endIdx, isSinglePage, totalPages) {
+            const page = document.createElement('div');
+            page.className = 'sheet';
+
+            // Grade headers
+            const sizeHeaders = checklistData.dynamicSizeHeaders || ['34', '36', '38', '40', '42', '44', '46'];
+            const g = checklistData.grades || {};
+
+            let gradeHeaderCells = '';
+            let gradeValueCells = '';
+            sizeHeaders.forEach(sz => {
+                gradeHeaderCells += `<th style="width: 5.5%;" class="center">${sz}</th>`;
+                const val = g[sz] !== undefined ? g[sz] : '—';
+                gradeValueCells += `<td class="center editable-cell" contenteditable="true">${val}</td>`;
+            });
+
+            const gU = g['U'] !== undefined ? g['U'] : (checklistData.qtdPecas || '—');
+            const gTotal = g['total'] !== undefined ? g['total'] : (checklistData.qtdPecas || 0);
+
+            // Materiais
+            let materiaisRows = '';
+            for (let i = startIdx; i < endIdx; i++) {
+                const m = checklistData.materiais[i];
+                materiaisRows += `
+                    <tr>
+                        <td class="center editable-cell" contenteditable="true">${m.codigo}</td>
+                        <td class="editable-cell" contenteditable="true">${m.descricao}</td>
+                        <td class="editable-cell" contenteditable="true">${m.cor}</td>
+                        <td class="center editable-cell" contenteditable="true">${m.tam}</td>
+                        <td class="center editable-cell" contenteditable="true">${m.consumo}</td>
+                        <td class="center editable-cell" contenteditable="true">${m.un}</td>
+                        <td class="center"><span class="check-box-small"></span></td>
+                        <td><div class="obs-box"><span class="line-blank"></span></div></td>
+                        <td class="no-print center"><button class="btn-del-row" onclick="deleteMaterialRow(${i})">✕</button></td>
+                    </tr>
+                `;
+            }
+
+            // Seções finais (obs + responsáveis)
+            let finalSections = '';
+            if (isSinglePage) {
+                finalSections = buildFinalSections();
+            }
+
+            page.innerHTML = `
+                <div class="sheet-body">
+                    <div class="doc-page-badge">Página 1 de ${totalPages}</div>
+                    <div class="doc-header-center">
+                        <h1>CHECKLIST DE ENVIO DE AVIAMENTOS</h1>
+                        <p>Controle Interno de Expedição — Aviamentos</p>
+                    </div>
+
+                    <!-- BARRA DE METADADOS -->
+                    <table class="doc-meta-bar">
+                        <tr>
+                            <td class="label">DOCUMENTO</td>
+                            <td class="val">${checklistData.docNumero}</td>
+                            <td class="label">REVISÃO</td>
+                            <td class="val">${checklistData.revisao}</td>
+                            <td class="label">DATA</td>
+                            <td class="val editable-cell" contenteditable="true">${checklistData.data}</td>
+                        </tr>
+                    </table>
+
+                    <!-- DADOS DO ENVIO -->
+                    <div class="tec-section-title">DADOS DO ENVIO</div>
+                    <table class="tec-table" style="margin-bottom: 8px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 33%;">NÚMERO DA NOTA FISCAL</th>
+                                <th style="width: 33%;">DATA DO ENVIO</th>
+                                <th style="width: 34%;">DESTINO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="line-blank"></span></td>
+                                <td>____ / ____ / ________</td>
+                                <td><span class="line-blank"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 1. IDENTIFICAÇÃO DA PRODUÇÃO -->
+                    <div class="tec-section-title">1. IDENTIFICAÇÃO DA PRODUÇÃO</div>
+                    <table class="tec-table" style="margin-bottom: 8px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 14%;" class="center">OP</th>
+                                <th style="width: 40%;">REFERÊNCIA / PEÇA</th>
+                                <th style="width: 22%;">PEDIDO</th>
+                                <th style="width: 14%;">COR</th>
+                                <th style="width: 10%;" class="center">QTD. PEÇAS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="center editable-cell" contenteditable="true">${checklistData.op}</td>
+                                <td class="editable-cell" contenteditable="true">${checklistData.referencia}</td>
+                                <td class="editable-cell" contenteditable="true">${checklistData.pedidos}</td>
+                                <td class="editable-cell" contenteditable="true">${checklistData.cor}</td>
+                                <td class="center editable-cell" contenteditable="true" style="font-weight: 800;">${checklistData.qtdPecas}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 2. GRADE -->
+                    <div class="tec-section-title">2. GRADE</div>
+                    <table class="tec-table" style="margin-bottom: 2px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 11%;" class="center">OP</th>
+                                <th style="width: 37%;">REFERÊNCIA</th>
+                                ${gradeHeaderCells}
+                                <th style="width: 6.5%;" class="center">U</th>
+                                <th style="width: 6.5%;" class="center">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="center editable-cell" contenteditable="true">${checklistData.op}</td>
+                                <td class="editable-cell" contenteditable="true">${checklistData.referencia}</td>
+                                ${gradeValueCells}
+                                <td class="center editable-cell" contenteditable="true" style="font-weight: 800; background: rgba(59,130,246,0.05);">${gU}</td>
+                                <td class="center editable-cell" contenteditable="true" style="font-weight: 800;">${gTotal}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="font-size: 6.5px; color: #4B5563; font-style: italic; margin-bottom: 8px;">
+                        Observação: produtos de tamanho único (bolsas, acessórios) exibem a quantidade na coluna "U".
+                    </div>
+
+                    <!-- 3. LISTA DE MATERIAIS -->
+                    <div class="tec-section-title">3. LISTA DE MATERIAIS — AVIAMENTOS</div>
+                    <table class="materials-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 11%;" class="center">CÓDIGO</th>
+                                <th style="width: 25%;">DESCRIÇÃO</th>
+                                <th style="width: 17%;">COR / ESTAMPA</th>
+                                <th style="width: 5%;" class="center">TAM</th>
+                                <th style="width: 8%;" class="center">CONSUMO</th>
+                                <th style="width: 5%;" class="center">UN</th>
+                                <th style="width: 5%;" class="center">✓</th>
+                                <th style="width: 20%;">OBS</th>
+                                <th class="no-print" style="width: 4%;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${materiaisRows}
+                        </tbody>
+                    </table>
+                    <div class="btn-add-row-container no-print">
+                        <button class="btn-add-row" onclick="addMaterialRow()">+ Adicionar Material</button>
+                    </div>
+
+                    ${finalSections}
+                </div>
+
+                <div class="tec-footer">
+                    <span>CONTROLE INTERNO • EXPEDIÇÃO DE AVIAMENTOS</span>
+                    <span>EXP-AVI-001 • Rev. 00</span>
+                    <span>Página 1</span>
+                </div>
+            `;
+
+            return page;
+        }
+
+        // ==========================================
+        // PÁGINA 2
+        // ==========================================
+        function createPageTwo(startIdx, endIdx) {
+            const page = document.createElement('div');
+            page.className = 'sheet';
+
+            let materiaisRows = '';
+            for (let i = startIdx; i < endIdx; i++) {
+                const m = checklistData.materiais[i];
+                materiaisRows += `
+                    <tr>
+                        <td class="center editable-cell" contenteditable="true">${m.codigo}</td>
+                        <td class="editable-cell" contenteditable="true">${m.descricao}</td>
+                        <td class="editable-cell" contenteditable="true">${m.cor}</td>
+                        <td class="center editable-cell" contenteditable="true">${m.tam}</td>
+                        <td class="center editable-cell" contenteditable="true">${m.consumo}</td>
+                        <td class="center editable-cell" contenteditable="true">${m.un}</td>
+                        <td class="center"><span class="check-box-small"></span></td>
+                        <td><div class="obs-box"><span class="line-blank"></span></div></td>
+                        <td class="no-print center"><button class="btn-del-row" onclick="deleteMaterialRow(${i})">✕</button></td>
+                    </tr>
+                `;
+            }
+
+            page.innerHTML = `
+                <div class="sheet-body">
+                    <div class="doc-page-badge">Página 2 de 2</div>
+                    <div class="doc-header-center">
+                        <h1>CHECKLIST DE ENVIO DE AVIAMENTOS</h1>
+                        <p>Continuação — Controle Interno de Expedição</p>
+                    </div>
+
+                    <!-- Continuação dos Materiais -->
+                    <div class="tec-section-title">3. LISTA DE MATERIAIS — AVIAMENTOS (Continuação)</div>
+                    <table class="materials-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 11%;" class="center">CÓDIGO</th>
+                                <th style="width: 25%;">DESCRIÇÃO</th>
+                                <th style="width: 17%;">COR / ESTAMPA</th>
+                                <th style="width: 5%;" class="center">TAM</th>
+                                <th style="width: 8%;" class="center">CONSUMO</th>
+                                <th style="width: 5%;" class="center">UN</th>
+                                <th style="width: 5%;" class="center">✓</th>
+                                <th style="width: 20%;">OBS</th>
+                                <th class="no-print" style="width: 4%;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${materiaisRows}
+                        </tbody>
+                    </table>
+                    <div class="btn-add-row-container no-print">
+                        <button class="btn-add-row" onclick="addMaterialRow()">+ Adicionar Material</button>
+                    </div>
+
+                    ${buildFinalSections()}
+                </div>
+
+                <div class="tec-footer">
+                    <span>CONTROLE INTERNO • EXPEDIÇÃO DE AVIAMENTOS • EXP-AVI-001 • Rev. 00</span>
+                    <span></span>
+                    <span>Página 2</span>
+                </div>
+            `;
+
+            return page;
+        }
+
+        // ==========================================
+        // SEÇÕES FINAIS (OBS + RESPONSÁVEIS)
+        // ==========================================
+        function buildFinalSections() {
+            return `
+                <!-- 4. OBSERVAÇÕES GERAIS -->
+                <div class="tec-section-title" style="margin-top: 10px;">4. OBSERVAÇÕES GERAIS</div>
+                <table class="tec-table" style="margin-bottom: 14px;">
+                    <tbody>
+                        <tr><td style="height: 12px;"><span class="line-blank"></span></td></tr>
+                        <tr><td style="height: 12px;"><span class="line-blank"></span></td></tr>
+                        <tr><td style="height: 12px;"><span class="line-blank"></span></td></tr>
+                    </tbody>
+                </table>
+
+                <!-- 5. RESPONSÁVEIS PELO PROCESSO -->
+                <div class="tec-section-title">5. RESPONSÁVEIS PELO PROCESSO</div>
+                <table class="tec-table resp-table" style="margin-bottom: 10px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 33.33%;" class="center">SEPARADOR</th>
+                            <th style="width: 33.33%;" class="center">CONFERENTE</th>
+                            <th style="width: 33.33%;" class="center">RECEBEDOR</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px 8px;">
+                                <div style="margin-bottom: 6px;">Nome: __________________________</div>
+                                <div style="margin-bottom: 6px;">Data: _____ / _____ / _________</div>
+                                <div style="margin-bottom: 6px;">Hora: _____:_____</div>
+                                <div>Assinatura: ___________________</div>
+                            </td>
+                            <td style="padding: 10px 8px;">
+                                <div style="margin-bottom: 6px;">Nome: __________________________</div>
+                                <div style="margin-bottom: 6px;">Data: _____ / _____ / _________</div>
+                                <div style="margin-bottom: 6px;">Hora: _____:_____</div>
+                                <div>Assinatura: ___________________</div>
+                            </td>
+                            <td style="padding: 10px 8px;">
+                                <div style="margin-bottom: 6px;">Nome: __________________________</div>
+                                <div style="margin-bottom: 6px;">Data: _____ / _____ / _________</div>
+                                <div style="margin-bottom: 6px;">Hora: _____:_____</div>
+                                <div>Assinatura: ___________________</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // ==========================================
+        // AÇÕES DE MATERIAIS
+        // ==========================================
+        function deleteMaterialRow(idx) {
+            if (checklistData.materiais.length <= 1) return;
+            checklistData.materiais.splice(idx, 1);
+            renderSheets();
+        }
+
+        function addMaterialRow() {
+            checklistData.materiais.push({
+                codigo: '—', descricao: '—', cor: '—', tam: 'U', consumo: '0,00', un: 'UN'
+            });
+            renderSheets();
+        }
+
+        function loadSampleData() {
+            location.reload();
+        }
+
+        // ==========================================
+        // EXPORTAÇÃO JSPDF
+        // ==========================================
+        function exportJsPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 12;
+            const contentWidth = pageWidth - 2 * margin;
+
+            const total = checklistData.materiais.length;
+            const splitIdx = getMaterialsSplitIndex();
+            const totalPages = splitIdx >= total ? 1 : 2;
+
+            const grayHeader = [209, 213, 219];
+            const grayLight = [243, 244, 246];
+            const borderColor = [107, 114, 128];
+
+            doc.setDrawColor(...borderColor);
+            doc.setLineWidth(0.2);
+
+            // Desenha página 1
+            drawPdfPage(doc, 0, splitIdx >= total ? total : splitIdx, 1, totalPages, splitIdx >= total, pageWidth, pageHeight, margin, contentWidth, grayHeader, grayLight);
+
+            if (splitIdx < total) {
+                doc.addPage();
+                drawPdfPage(doc, splitIdx, total, 2, totalPages, true, pageWidth, pageHeight, margin, contentWidth, grayHeader, grayLight);
+            }
+
+            doc.save(`Checklist_Aviamentos_OP_${checklistData.op}.pdf`);
+        }
+
+        function drawPdfPage(doc, startIdx, endIdx, pageNum, totalPages, isLastPage, pageWidth, pageHeight, margin, contentWidth, grayHeader, grayLight) {
+            let y = 12;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(75, 85, 99);
+            doc.text(`Página ${pageNum} de ${totalPages}`, pageWidth - margin, y, { align: 'right' });
+            y += 4;
+
+            doc.setFontSize(13);
+            doc.setTextColor(0, 0, 0);
+            doc.text('CHECKLIST DE ENVIO DE AVIAMENTOS', pageWidth / 2, y + 2, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.text(pageNum === 1 ? 'Controle Interno de Expedição — Aviamentos' : 'Continuação — Controle Interno de Expedição', pageWidth / 2, y + 6.5, { align: 'center' });
+            y += 11;
+
+            if (pageNum === 1) {
+                // Metadados
+                doc.setFontSize(6.5);
+                doc.setFont('helvetica', 'bold');
+                const metaColW = contentWidth / 6;
+                doc.setFillColor(...grayHeader);
+                doc.rect(margin, y, metaColW, 6, 'F');
+                doc.rect(margin + 2 * metaColW, y, metaColW, 6, 'F');
+                doc.rect(margin + 4 * metaColW, y, metaColW, 6, 'F');
+                doc.rect(margin, y, contentWidth, 6);
+                for (let i = 1; i < 6; i++) doc.line(margin + i * metaColW, y, margin + i * metaColW, y + 6);
+
+                doc.text('DOCUMENTO', margin + metaColW / 2, y + 4, { align: 'center' });
+                doc.text(checklistData.docNumero, margin + 1.5 * metaColW, y + 4, { align: 'center' });
+                doc.text('REVISÃO', margin + 2.5 * metaColW, y + 4, { align: 'center' });
+                doc.text(checklistData.revisao, margin + 3.5 * metaColW, y + 4, { align: 'center' });
+                doc.text('DATA', margin + 4.5 * metaColW, y + 4, { align: 'center' });
+                doc.text(checklistData.data, margin + 5.5 * metaColW, y + 4, { align: 'center' });
+                y += 9;
+
+                // Dados do Envio
+                doc.setFillColor(...grayHeader);
+                doc.rect(margin, y, contentWidth, 5, 'FD');
+                doc.text('DADOS DO ENVIO', margin + 2, y + 3.5);
+                y += 5;
+
+                const shipColW = contentWidth / 3;
+                doc.setFillColor(...grayLight);
+                doc.rect(margin, y, contentWidth, 4, 'FD');
+                doc.line(margin + shipColW, y, margin + shipColW, y + 4);
+                doc.line(margin + 2 * shipColW, y, margin + 2 * shipColW, y + 4);
+                doc.text('NÚMERO DA NOTA FISCAL', margin + 2, y + 3);
+                doc.text('DATA DO ENVIO', margin + shipColW + 2, y + 3);
+                doc.text('DESTINO', margin + 2 * shipColW + 2, y + 3);
+                y += 4;
+                doc.rect(margin, y, contentWidth, 6);
+                doc.line(margin + shipColW, y, margin + shipColW, y + 6);
+                doc.line(margin + 2 * shipColW, y, margin + 2 * shipColW, y + 6);
+                doc.setFont('helvetica', 'normal');
+                doc.text('____ / ____ / ________', margin + shipColW + 2, y + 4);
+                y += 9;
+
+                // 1. Identificação
+                doc.setFont('helvetica', 'bold');
+                doc.setFillColor(...grayHeader);
+                doc.rect(margin, y, contentWidth, 5, 'FD');
+                doc.text('1. IDENTIFICAÇÃO DA PRODUÇÃO', margin + 2, y + 3.5);
+                y += 5;
+
+                const idColW = [24, 66, 44, 28, 24];
+                doc.setFillColor(...grayLight);
+                doc.rect(margin, y, contentWidth, 4.5, 'FD');
+                let cx = margin;
+                ['OP', 'REFERÊNCIA / PEÇA', 'PEDIDO', 'COR', 'QTD. PEÇAS'].forEach((h, i) => {
+                    doc.text(h, cx + (i === 0 || i === 4 ? idColW[i] / 2 : 2), y + 3.2, { align: (i === 0 || i === 4 ? 'center' : 'left') });
+                    cx += idColW[i];
+                });
+                y += 4.5;
+
+                doc.setFont('helvetica', 'normal');
+                doc.rect(margin, y, contentWidth, 5);
+                cx = margin;
+                doc.text(checklistData.op, cx + idColW[0] / 2, y + 3.5, { align: 'center' }); cx += idColW[0];
+                doc.text(checklistData.referencia.substring(0, 36), cx + 2, y + 3.5); cx += idColW[1];
+                doc.text((checklistData.pedidos || '—').substring(0, 28), cx + 2, y + 3.5); cx += idColW[2];
+                doc.text((checklistData.cor || '—').substring(0, 16), cx + 2, y + 3.5); cx += idColW[3];
+                doc.setFont('helvetica', 'bold');
+                doc.text(String(checklistData.qtdPecas), cx + idColW[4] / 2, y + 3.5, { align: 'center' });
+                y += 8;
+
+                // 2. Grade
+                doc.setFont('helvetica', 'bold');
+                doc.setFillColor(...grayHeader);
+                doc.rect(margin, y, contentWidth, 4.5, 'FD');
+                doc.text('2. GRADE', margin + 2, y + 3.2);
+                y += 4.5;
+
+                const sizeHeaders = checklistData.dynamicSizeHeaders || ['34', '36', '38', '40', '42', '44', '46'];
+                const numSizes = sizeHeaders.length;
+                const grOpW = 18;
+                const grRefW = 70;
+                const grUW = 14;
+                const grTotW = 14;
+                const grSizeW = (contentWidth - grOpW - grRefW - grUW - grTotW) / numSizes;
+
+                doc.setFillColor(...grayLight);
+                doc.rect(margin, y, contentWidth, 4, 'FD');
+                cx = margin;
+                doc.text('OP', cx + grOpW / 2, y + 3, { align: 'center' }); cx += grOpW;
+                doc.text('REFERÊNCIA', cx + 2, y + 3); cx += grRefW;
+                sizeHeaders.forEach(sz => {
+                    doc.text(sz, cx + grSizeW / 2, y + 3, { align: 'center' });
+                    cx += grSizeW;
+                });
+                doc.text('U', cx + grUW / 2, y + 3, { align: 'center' }); cx += grUW;
+                doc.text('TOTAL', cx + grTotW / 2, y + 3, { align: 'center' });
+                y += 4;
+
+                doc.setFont('helvetica', 'normal');
+                doc.rect(margin, y, contentWidth, 4.5);
+                cx = margin;
+                doc.text(checklistData.op, cx + grOpW / 2, y + 3.2, { align: 'center' }); cx += grOpW;
+                doc.text(checklistData.referencia.substring(0, 38), cx + 2, y + 3.2); cx += grRefW;
+
+                const g = checklistData.grades || {};
+                sizeHeaders.forEach(sz => {
+                    const val = g[sz] !== undefined ? String(g[sz]) : '—';
+                    doc.text(val, cx + grSizeW / 2, y + 3.2, { align: 'center' });
+                    cx += grSizeW;
+                });
+                const valU = g['U'] !== undefined ? String(g['U']) : String(checklistData.qtdPecas || '—');
+                doc.setFont('helvetica', 'bold');
+                doc.text(valU, cx + grUW / 2, y + 3.2, { align: 'center' }); cx += grUW;
+                const valTot = g['total'] !== undefined ? String(g['total']) : String(checklistData.qtdPecas || 0);
+                doc.text(valTot, cx + grTotW / 2, y + 3.2, { align: 'center' });
+                y += 5;
+
+                doc.setFontSize(5.5);
+                doc.setFont('helvetica', 'italic');
+                doc.text('Observação: produtos de tamanho único (bolsas, acessórios) exibem a quantidade na coluna "U".', margin, y + 2.5);
+                y += 5.5;
+
+                // 3. Materiais header
+                doc.setFontSize(6.5);
+                doc.setFont('helvetica', 'bold');
+                doc.setFillColor(...grayHeader);
+                doc.rect(margin, y, contentWidth, 4.5, 'FD');
+                doc.text('3. LISTA DE MATERIAIS — AVIAMENTOS', margin + 2, y + 3.2);
+                y += 4.5;
+            } else {
+                // Página 2: header da continuação dos materiais
+                doc.setFontSize(6.5);
+                doc.setFont('helvetica', 'bold');
+                doc.setFillColor(...grayHeader);
+                doc.rect(margin, y, contentWidth, 4.5, 'FD');
+                doc.text('3. LISTA DE MATERIAIS — AVIAMENTOS (Continuação)', margin + 2, y + 3.2);
+                y += 4.5;
+            }
+
+            // Cabeçalho da tabela de materiais
+            const matW = [20, 48, 32, 10, 16, 10, 10, 40];
+            doc.setFillColor(...grayLight);
+            doc.rect(margin, y, contentWidth, 4, 'FD');
+            let cx = margin;
+            ['CÓDIGO', 'DESCRIÇÃO', 'COR / ESTAMPA', 'TAM', 'CONSUMO', 'UN', '✓', 'OBS'].forEach((h, i) => {
+                const align = (i === 0 || i === 3 || i === 4 || i === 5 || i === 6) ? 'center' : 'left';
+                doc.text(h, cx + (align === 'center' ? matW[i] / 2 : 2), y + 3, { align });
+                cx += matW[i];
+            });
+            y += 4;
+
+            // Linhas de materiais
+            const itemCount = endIdx - startIdx;
+            const rowHeight = itemCount <= 16 ? 6.0 : 5.4;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6);
+            for (let i = startIdx; i < endIdx; i++) {
+                const m = checklistData.materiais[i];
+                if (y + rowHeight > pageHeight - 50) break; // Safety
+
+                doc.rect(margin, y, contentWidth, rowHeight);
+                cx = margin;
+                doc.text(m.codigo || '', cx + matW[0] / 2, y + rowHeight * 0.65, { align: 'center' }); cx += matW[0];
+                doc.text((m.descricao || '').substring(0, 28), cx + 2, y + rowHeight * 0.65); cx += matW[1];
+                doc.text((m.cor || '').substring(0, 20), cx + 2, y + rowHeight * 0.65); cx += matW[2];
+                doc.text(m.tam || 'U', cx + matW[3] / 2, y + rowHeight * 0.65, { align: 'center' }); cx += matW[3];
+                doc.text(m.consumo || '0,00', cx + matW[4] / 2, y + rowHeight * 0.65, { align: 'center' }); cx += matW[4];
+                doc.text(m.un || 'UN', cx + matW[5] / 2, y + rowHeight * 0.65, { align: 'center' }); cx += matW[5];
+                // Checkbox
+                doc.rect(cx + matW[6] / 2 - 1.5, y + (rowHeight - 3) / 2, 3, 3);
+                cx += matW[6];
+                // OBS line
+                doc.line(cx + 2, y + rowHeight - 1.5, cx + matW[7] - 2, y + rowHeight - 1.5);
+                y += rowHeight;
+            }
+            y += 3;
+
+            // Seções finais na última página
+            if (isLastPage) {
+                doc.setFontSize(6.5);
+                doc.setFont('helvetica', 'bold');
+
+                // 4. Observações
+                doc.setFillColor(...grayHeader);
+                doc.rect(margin, y, contentWidth, 5, 'FD');
+                doc.text('4. OBSERVAÇÕES GERAIS', margin + 2, y + 3.5);
+                y += 5;
+                doc.rect(margin, y, contentWidth, 18);
+                doc.setFont('helvetica', 'normal');
+                doc.line(margin + 4, y + 6, margin + contentWidth - 4, y + 6);
+                doc.line(margin + 4, y + 12, margin + contentWidth - 4, y + 12);
+                y += 22;
+
+                // 5. Responsáveis
+                doc.setFont('helvetica', 'bold');
+                doc.setFillColor(...grayHeader);
+                doc.rect(margin, y, contentWidth, 5, 'FD');
+                doc.text('5. RESPONSÁVEIS PELO PROCESSO', margin + 2, y + 3.5);
+                y += 5;
+
+                const respW = contentWidth / 3;
+                doc.setFillColor(...grayLight);
+                doc.rect(margin, y, contentWidth, 4.5, 'FD');
+                doc.text('SEPARADOR', margin + respW / 2, y + 3.2, { align: 'center' });
+                doc.text('CONFERENTE', margin + 1.5 * respW, y + 3.2, { align: 'center' });
+                doc.text('RECEBEDOR', margin + 2.5 * respW, y + 3.2, { align: 'center' });
+                y += 4.5;
+
+                doc.rect(margin, y, contentWidth, 24);
+                doc.line(margin + respW, y, margin + respW, y + 24);
+                doc.line(margin + 2 * respW, y, margin + 2 * respW, y + 24);
+
+                doc.setFont('helvetica', 'normal');
+                for (let i = 0; i < 3; i++) {
+                    const rx = margin + i * respW + 4;
+                    doc.text('Nome: __________________________', rx, y + 6);
+                    doc.text('Data: _____ / _____ / _________', rx, y + 11);
+                    doc.text('Hora: _____:_____', rx, y + 16);
+                    doc.text('Assinatura: ___________________', rx, y + 21);
+                }
+            }
+
+            // Rodapé
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6);
+            doc.text('CONTROLE INTERNO • EXPEDIÇÃO DE AVIAMENTOS', margin, pageHeight - 8);
+            doc.text('EXP-AVI-001 • Rev. 00', pageWidth / 2, pageHeight - 8, { align: 'center' });
+            doc.text(`Página ${pageNum}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+        }
+
+        // ==========================================
+        // INICIALIZAÇÃO
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSheets();
+        });
+    </script>
+</body>
+</html>
