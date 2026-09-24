@@ -13,11 +13,11 @@
             --patbo-navy: #1F2937;
             --patbo-navy-dark: #111827;
             --patbo-navy-light: #374151;
-            --patbo-gray-header: #D1D5DB;
-            --patbo-gray-light: #F3F4F6;
-            --patbo-gray-alt: #F9FAFB;
-            --patbo-border: #9CA3AF;
-            --patbo-border-dark: #4B5563;
+            --patbo-gray-header: #4169E1;
+            --patbo-gray-light: #E1E8FF;
+            --patbo-gray-alt: #F6F8FF;
+            --patbo-border: #8EA4E8;
+            --patbo-border-dark: #31467D;
         }
 
         * {
@@ -352,6 +352,7 @@
             font-weight: 800;
             text-transform: uppercase;
             width: 18%;
+            color: #FFF;
         }
 
         .doc-meta-bar td.val {
@@ -368,7 +369,7 @@
             font-size: 8.5px;
             font-weight: 800;
             text-transform: uppercase;
-            color: #000;
+            color: #FFF;
         }
 
         .tec-table {
@@ -386,7 +387,7 @@
             font-size: 7.5px;
             font-weight: 800;
             text-transform: uppercase;
-            color: #000;
+            color: #FFF;
             text-align: left;
         }
 
@@ -1447,9 +1448,9 @@
             const totalPecas = getTotalDocumentoPecas();
             const consolidated = getConsolidatedMaterials();
 
-            const grayHeader = [209, 213, 219];
-            const grayLight = [243, 244, 246];
-            const borderColor = [107, 114, 128];
+            const grayHeader = [65, 105, 225];
+            const grayLight = [225, 232, 255];
+            const borderColor = [49, 70, 125];
 
             doc.setDrawColor(...borderColor);
             doc.setLineWidth(0.2);
