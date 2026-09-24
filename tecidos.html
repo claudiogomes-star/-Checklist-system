@@ -238,6 +238,8 @@
             margin-bottom: 20px;
             width: 100%;
         }
+        .status-badge.processing { background: rgba(59, 130, 246, 0.14); border-color: rgba(59, 130, 246, 0.42); color: #BFDBFE; }
+        .status-badge.warning { background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.42); color: #FDE68A; }
 
         .info-card {
             background: #0F172A;
@@ -577,7 +579,7 @@
             </div>
 
             <div class="help-box">
-                💡 <strong>Consolidação Automática:</strong> Se o mesmo tecido estiver em mais de uma OP, o sistema soma as metragens automaticamente na Seção 3!
+                💡 <strong>Conferência rápida:</strong> o sistema consolida metragens automaticamente. Antes de imprimir, valide descrição e cor dos itens importados.
             </div>
         </aside>
 
@@ -735,7 +737,7 @@
                     bucket = { y: ty, items: [] };
                     lineBuckets.push(bucket);
                 }
-                bucket.items.push({ x: tx, str: str.trim() });
+                bucket.items.push({ x: tx, str: str.trim(), width: item.width || 0 });
             });
 
             // Ordena as linhas do topo para baixo (Y decrescente no PDF)
@@ -755,7 +757,12 @@
                     }
                     deduped.push(item);
                 }
-                return deduped.map(i => i.str).join(' ');
+                return deduped.map((item, index) => {
+                    if (index === 0) return item.str;
+                    const previous = deduped[index - 1];
+                    const previousEnd = previous.x + (previous.width || 0);
+                    return `${item.x - previousEnd > 10 ? '\t' : ' '}${item.str}`;
+                }).join('');
             });
 
             return lines.join('\n');
@@ -764,7 +771,7 @@
         // Processamento de múltiplos PDFs ou PDF com várias páginas
         async function handleTecidosFiles(files) {
             if (!files || files.length === 0) return;
-            document.getElementById('statusTextTec').innerText = 'Processando PDF(s)...';
+            setTecidosImportStatus('Lendo PDFs e organizando as colunas...', 'processing');
 
             try {
                 let allPagesSpatialText = [];
@@ -796,15 +803,24 @@
                 if (newOps.length > 0) {
                     tecidosData.ops = newOps;
                     renderTecidosPages();
-                    document.getElementById('statusTextTec').innerText = `${newOps.length} OPs processadas com sucesso!`;
+                    const semCor = newOps.flatMap(op => op.materiais || []).filter(m => !m.cor || m.cor === 'ÚNICA').length;
+                    setTecidosImportStatus(semCor ? `${newOps.length} OPs processadas • revise ${semCor} item(ns) sem cor identificada` : `${newOps.length} OPs processadas com sucesso!`, semCor ? 'warning' : 'success');
                 } else {
                     alert('Nenhuma Ordem de Produção válida foi detectada nos arquivos fornecidos.');
-                    document.getElementById('statusTextTec').innerText = 'Falha no processamento';
+                    setTecidosImportStatus('Falha no processamento', 'warning');
                 }
             } catch (err) {
                 console.error('Erro na leitura de tecidos:', err);
                 alert('Erro ao processar os relatórios de tecidos. Verifique os arquivos.');
+                setTecidosImportStatus('Erro no processamento', 'warning');
             }
+        }
+
+        function setTecidosImportStatus(message, state = 'success') {
+            const badge = document.getElementById('statusBadgeTec');
+            badge.classList.remove('processing', 'warning');
+            if (state !== 'success') badge.classList.add(state);
+            document.getElementById('statusTextTec').innerText = message;
         }
 
         // Parser Dinâmico Universal para relatórios Millennium NetWork Ltda (Pré-Fase)
@@ -933,6 +949,20 @@
             // 6. Localiza todas as Matérias-Primas (Tecidos e Entretelas)
             for (let i = 0; i < lines.length; i++) {
                 const l = lines[i];
+                const columns = l.split(/\t+/).map(value => value.trim()).filter(Boolean);
+                if (columns.length >= 4) {
+                    const first = columns[0].match(/^(\d{4,12})\s*(.*)$/);
+                    if (first) {
+                        const codigo = first[1];
+                        const colorIndex = columns.findIndex((value, index) => index > 0 && /^\d{3,8}\s+[^\d]+/i.test(value));
+                        const descricao = [first[2], ...columns.slice(1, colorIndex)].filter(Boolean).join(' ').trim();
+                        const cor = colorIndex > 0 ? columns[colorIndex] : 'ÚNICA';
+                        const trailing = columns.slice(colorIndex + 1).join(' ').split(/\s+/);
+                        const un = (trailing.find(value => /^(MT|M|KG|UN|PC|RL|PA)$/i.test(value)) || 'MT').toUpperCase();
+                        const consumo = parseFloat((trailing.find(value => /^[\d.,]+$/.test(value)) || '0').replace(',', '.')) || 0;
+                        if (descricao && colorIndex > 0) { materiais.push({ codigo, descricao, cor, consumo, un }); continue; }
+                    }
+                }
                 const tokens = l.split(/\s+/);
                 
                 // Linha de matéria-prima começa com código numérico (4 a 12 dígitos) e tem pelo menos 4 colunas
@@ -973,7 +1003,7 @@
                     let middleStr = remainingTokens.join(' ').replace(/\s*000\s+UNICA\b/gi, '').trim();
                     
                     // Procura o código de cor no final (ex: 166955 BEGE, 00167131 PINGADO, 00010 BRANCO, etc.)
-                    const mCor = middleStr.match(/(\d{3,8}\s+[A-Za-zÀ-Ú\s]+)$/);
+                    const mCor = middleStr.match(/(\d{4,8}\s+[A-Za-zÀ-Ú\s]+)$/);
                     let matCor = 'ÚNICA';
                     let desc = middleStr;
                     
@@ -1514,6 +1544,8 @@
             doc.setFont('helvetica', 'normal');
             tecidosData.ops.forEach(o => {
                 doc.rect(margin, y, contentWidth, 5);
+                cx = margin + idColW[0];
+                for (let i = 1; i < idColW.length; i++) { doc.line(cx, y, cx, y + 5); cx += idColW[i]; }
                 cx = margin;
                 doc.text(o.op, cx + idColW[0] / 2, y + 3.5, { align: 'center' }); cx += idColW[0];
                 doc.text(o.referencia.substring(0, 38), cx + 2, y + 3.5); cx += idColW[1];
@@ -1592,11 +1624,15 @@
                 doc.text(h, cx + (i === 0 ? consW[i] / 2 : (i === 3 ? consW[i] - 2 : 2)), y + 3, { align: (i === 0 ? 'center' : (i === 3 ? 'right' : 'left')) });
                 cx += consW[i];
             });
+            cx = margin + consW[0];
+            for (let i = 1; i < consW.length; i++) { doc.line(cx, y, cx, y + 4); cx += consW[i]; }
             y += 4;
 
             doc.setFont('helvetica', 'normal');
             consolidated.forEach(m => {
                 doc.rect(margin, y, contentWidth, 4.5);
+                cx = margin + consW[0];
+                for (let i = 1; i < consW.length; i++) { doc.line(cx, y, cx, y + 4.5); cx += consW[i]; }
                 cx = margin;
                 doc.text(m.codigo, cx + consW[0] / 2, y + 3.2, { align: 'center' }); cx += consW[0];
                 doc.text(m.descricao.substring(0, 48), cx + 2, y + 3.2); cx += consW[1];
