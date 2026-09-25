@@ -1045,14 +1045,69 @@
                     const first = columns[0].match(/^(\d{4,12})\s*(.*)$/);
                     if (first) {
                         const codigo = first[1];
-                        const colorIndex = columns.findIndex((value, index) => index > 0 && /^\d{3,8}\s+[^\d]+/i.test(value));
-                        const descricao = [first[2], ...columns.slice(1, colorIndex)].filter(Boolean).join(' ').trim();
-                        const cor = colorIndex > 0 ? columns[colorIndex] : 'ÚNICA';
-                        const trailing = columns.slice(colorIndex + 1).join(' ').split(/\s+/);
-                        const un = (trailing.find(value => /^(MT|M|KG|UN|PC|RL|PA)$/i.test(value)) || 'UN').toUpperCase();
-                        const consumo = trailing.find(value => /^[\d.,]+$/.test(value)) || '0,00';
-                        const tam = trailing.find(value => /^(U|UNICA|\d{1,2}|PP|P|M|G|GG|\d+CM)$/i.test(value)) || 'U';
-                        if (descricao && colorIndex > 0) { materiais.push({ codigo, descricao, cor, tam: tam.toUpperCase(), consumo: consumo.replace('.', ','), un }); continue; }
+                        const descFromFirst = first[2] ? first[2].trim() : '';
+
+                        let colorIndex = -1;
+                        let cor = '';
+                        let sliceStart = -1;
+
+                        for (let idx = 1; idx < columns.length; idx++) {
+                            if (/^\d{3,8}\s+[^\d]+/i.test(columns[idx])) {
+                                colorIndex = idx;
+                                cor = columns[idx].replace(/\s+000$/i, '').replace(/\s+000\s+UNICA$/i, '').trim();
+                                sliceStart = idx + 1;
+                                break;
+                            }
+                        }
+
+                        if (colorIndex < 0) {
+                            for (let idx = 1; idx < columns.length - 1; idx++) {
+                                if (/^\d{3,8}$/.test(columns[idx]) && /^[A-Za-zÀ-Ú\s]+$/i.test(columns[idx + 1]) && !/^(UNICA|PADRAO|MT|M|KG|UN|PC|RL|PA|U|PP|P|M|G|GG|\d{1,2})$/i.test(columns[idx + 1])) {
+                                    colorIndex = idx;
+                                    cor = `${columns[idx]} ${columns[idx + 1]}`.trim();
+                                    sliceStart = idx + 2;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (colorIndex > 0) {
+                            const descParts = [descFromFirst, ...columns.slice(1, colorIndex)].filter(Boolean);
+                            const descricao = descParts.join(' ').trim();
+
+                            const trailing = columns.slice(sliceStart).join(' ').split(/\s+/).filter(Boolean);
+                            let un = 'UN';
+                            let consumo = '0,00';
+                            let tam = 'U';
+
+                            let tIdx = trailing.length - 1;
+                            if (tIdx >= 0 && /^(MT|M|KG|UN|PC|RL|PA)$/i.test(trailing[tIdx])) {
+                                un = trailing[tIdx].toUpperCase();
+                                tIdx--;
+                            }
+
+                            while (tIdx >= 0) {
+                                if (/^[\d.,]+$/.test(trailing[tIdx])) {
+                                    consumo = trailing[tIdx].replace('.', ',');
+                                    tIdx--;
+                                    break;
+                                }
+                                tIdx--;
+                            }
+
+                            while (tIdx >= 0) {
+                                if (/^(U|UNICA|\d{1,2}|PP|P|M|G|GG|\d+CM)$/i.test(trailing[tIdx])) {
+                                    tam = trailing[tIdx].toUpperCase();
+                                    break;
+                                }
+                                tIdx--;
+                            }
+
+                            if (descricao) {
+                                materiais.push({ codigo, descricao, cor: cor || 'ÚNICA', tam, consumo, un });
+                                continue;
+                            }
+                        }
                     }
                 }
                 const tokens = l.split(/\s+/);

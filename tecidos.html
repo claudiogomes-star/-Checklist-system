@@ -978,6 +978,15 @@
             // A quantidade da OP é definida depois da leitura da grade, pois a
             // primeira coluna de "Total de Peças" é um tamanho, não o total.
 
+            function cleanTecidoCor(corStr) {
+                if (!corStr) return 'ÚNICA';
+                let c = String(corStr).trim();
+                c = c.replace(/\s+000\s+UNICA$/i, '');
+                c = c.replace(/\s+000$/i, '');
+                c = c.replace(/\s+UNICA$/i, '');
+                return c.trim() || 'ÚNICA';
+            }
+
             // 6. Localiza todas as Matérias-Primas (Tecidos e Entretelas)
             for (let i = 0; i < lines.length; i++) {
                 const l = lines[i];
@@ -986,13 +995,63 @@
                     const first = columns[0].match(/^(\d{4,12})\s*(.*)$/);
                     if (first) {
                         const codigo = first[1];
-                        const colorIndex = columns.findIndex((value, index) => index > 0 && /^\d{3,8}\s+[^\d]+/i.test(value));
-                        const descricao = [first[2], ...columns.slice(1, colorIndex)].filter(Boolean).join(' ').trim();
-                        const cor = colorIndex > 0 ? columns[colorIndex] : 'ÚNICA';
-                        const trailing = columns.slice(colorIndex + 1).join(' ').split(/\s+/);
-                        const un = (trailing.find(value => /^(MT|M|KG|UN|PC|RL|PA)$/i.test(value)) || 'MT').toUpperCase();
-                        const consumo = parseFloat((trailing.find(value => /^[\d.,]+$/.test(value)) || '0').replace(',', '.')) || 0;
-                        if (descricao && colorIndex > 0) { materiais.push({ codigo, descricao, cor, consumo, un }); continue; }
+                        const descFromFirst = first[2] ? first[2].trim() : '';
+
+                        let colorIndex = -1;
+                        let cor = '';
+                        let sliceStart = -1;
+
+                        // Caso A: Código e nome da cor na mesma coluna (ex: "00167131 PINGADO" ou "00166912 VAPOR COD 000")
+                        for (let idx = 1; idx < columns.length; idx++) {
+                            if (/^\d{3,8}\s+[^\d]+/i.test(columns[idx])) {
+                                colorIndex = idx;
+                                cor = cleanTecidoCor(columns[idx]);
+                                sliceStart = idx + 1;
+                                break;
+                            }
+                        }
+
+                        // Caso B: Código da cor em uma coluna e Nome na seguinte (ex: "166955" e "BEGE")
+                        if (colorIndex < 0) {
+                            for (let idx = 1; idx < columns.length - 1; idx++) {
+                                if (/^\d{3,8}$/.test(columns[idx]) && /^[A-Za-zÀ-Ú\s]+$/i.test(columns[idx + 1]) && !/^(UNICA|PADRAO|MT|M|KG|UN|PC|RL|PA|U|PP|P|M|G|GG|\d{1,2})$/i.test(columns[idx + 1])) {
+                                    colorIndex = idx;
+                                    cor = cleanTecidoCor(`${columns[idx]} ${columns[idx + 1]}`);
+                                    sliceStart = idx + 2;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (colorIndex > 0) {
+                            const descParts = [descFromFirst, ...columns.slice(1, colorIndex)].filter(Boolean);
+                            const descricao = descParts.join(' ').trim();
+
+                            const trailing = columns.slice(sliceStart).join(' ').split(/\s+/).filter(Boolean);
+                            let un = 'MT';
+                            let consumo = 0;
+
+                            let tIdx = trailing.length - 1;
+                            // Unidade no final
+                            if (tIdx >= 0 && /^(MT|M|KG|UN|PC|RL|PA)$/i.test(trailing[tIdx])) {
+                                un = trailing[tIdx].toUpperCase();
+                                tIdx--;
+                            }
+
+                            // Consumo: busca o número imediatamente anterior vindo da direita para a esquerda
+                            while (tIdx >= 0) {
+                                if (/^[\d.,]+$/.test(trailing[tIdx])) {
+                                    consumo = parseFloat(trailing[tIdx].replace(',', '.')) || 0;
+                                    break;
+                                }
+                                tIdx--;
+                            }
+
+                            if (descricao) {
+                                materiais.push({ codigo, descricao, cor: cor || 'ÚNICA', consumo, un });
+                                continue;
+                            }
+                        }
                     }
                 }
                 const tokens = l.split(/\s+/);
@@ -1000,6 +1059,11 @@
                 // Linha de matéria-prima começa com código numérico (4 a 12 dígitos) e tem pelo menos 4 colunas
                 if (tokens.length >= 4 && /^\d{4,12}$/.test(tokens[0])) {
                     const codigo = tokens[0];
+
+                    // Deduplica código repetido lado a lado (comum em FastReport)
+                    if (tokens.length > 1 && tokens[1] === codigo) {
+                        tokens.splice(1, 1);
+                    }
                     
                     let un = 'MT';
                     let consumo = 0;
@@ -1011,14 +1075,14 @@
                         lastIdx--;
                     }
                     
-                    // Consumo previsto
+                    // Consumo previsto vindo do final
                     if (lastIdx >= 1 && /^[\d.,]+$/.test(tokens[lastIdx])) {
                         consumo = parseFloat(tokens[lastIdx].replace(',', '.')) || 0;
                         lastIdx--;
                     }
                     
                     // Remove tamanho se for 'U', 'UNICA' ou tamanho de grade
-                    if (lastIdx >= 1 && /^(U|UNICA|\d{1,2})$/i.test(tokens[lastIdx])) {
+                    if (lastIdx >= 1 && /^(U|UNICA|\d{1,2}|PP|P|M|G|GG)$/i.test(tokens[lastIdx])) {
                         lastIdx--;
                     }
                     
@@ -1040,7 +1104,7 @@
                     let desc = middleStr;
                     
                     if (mCor) {
-                        matCor = mCor[1].trim();
+                        matCor = cleanTecidoCor(mCor[1].trim());
                         desc = middleStr.substring(0, mCor.index).trim();
                     }
                     
@@ -1056,7 +1120,7 @@
                 }
             }
 
-            const gradeData = parseNormalizedGrade(lines, qtdPecas);
+                        const gradeData = parseNormalizedGrade(lines, qtdPecas);
             qtdPecas = gradeData.total;
             const gradesObj = gradeData.grades;
 
