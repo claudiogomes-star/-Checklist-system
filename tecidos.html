@@ -495,6 +495,45 @@
                 break-after: avoid !important;
             }
         }
+
+        /* Camada visual da aplicação (não interfere no layout do PDF impresso). */
+        @media screen {
+            body { background: radial-gradient(circle at 8% -8%, rgba(51, 101, 167, .48), transparent 32rem), radial-gradient(circle at 92% 15%, rgba(154, 110, 152, .20), transparent 26rem), linear-gradient(145deg, #081321 0%, #101e31 52%, #111827 100%); color: #e8eef8; }
+            .app-header { background: rgba(10, 23, 40, .84); border-bottom-color: rgba(148, 163, 184, .18); backdrop-filter: blur(18px); padding: 14px 28px; }
+            .header-container { max-width: 1530px; }
+            .header-brand { gap: 12px; }
+            .header-title span { letter-spacing: .08em; font-size: 12px; color: #cbd8e8; }
+            .module-switcher { background: rgba(3, 12, 25, .65); border-color: rgba(148, 163, 184, .22); border-radius: 12px; padding: 4px; }
+            .module-tab { border-radius: 9px; padding: 8px 15px; }
+            .module-tab.active { background: linear-gradient(135deg, #234a80, #315e98); box-shadow: 0 5px 14px rgba(0,0,0,.23); }
+            .btn-action { border-radius: 10px; padding: 10px 16px; box-shadow: 0 5px 14px rgba(0,0,0,.14); }
+            .btn-action:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,.23); }
+            .btn-secondary { background: rgba(71, 85, 105, .78); border: 1px solid rgba(203, 213, 225, .15); }
+            .btn-accent { background: linear-gradient(135deg, #3978d2, #2460b8); }
+            .btn-primary { background: linear-gradient(135deg, #16a777, #0d8263); }
+            .workspace { max-width: 1530px; padding: 38px 28px 52px; gap: 34px; }
+            .control-panel { position: sticky; top: 92px; width: 330px; background: linear-gradient(155deg, rgba(27, 44, 65, .95), rgba(13, 25, 43, .94)); border-color: rgba(148, 163, 184, .20); border-radius: 20px; padding: 25px; box-shadow: 0 20px 46px rgba(0,0,0,.25); }
+            .control-panel h3 { font-size: 17px; letter-spacing: -.01em; }
+            .upload-dropzone { border-color: rgba(143, 181, 236, .52); background: linear-gradient(145deg, rgba(60, 113, 177, .17), rgba(10, 21, 37, .42)); border-radius: 16px; padding: 29px 16px; }
+            .upload-dropzone:hover, .upload-dropzone.drag-over { border-color: #8fc5ff; background: rgba(59,130,246,.18); transform: translateY(-2px); }
+            .upload-icon { color: #b6dbff; }
+            .status-badge { border-radius: 11px; padding: 10px 12px; }
+            .info-card { background: rgba(5, 15, 29, .52); border-color: rgba(148, 163, 184, .18); border-radius: 14px; padding: 15px; }
+            .info-card-row { padding: 4px 0; border-bottom: 1px solid rgba(148,163,184,.09); }
+            .info-card-row:last-child { border-bottom: 0; }
+            .info-card-row strong { color: #f7fbff; }
+            .help-box { border-radius: 12px; border: 1px solid rgba(96,165,250,.24); border-left: 3px solid #65a8f4; background: rgba(36, 84, 149, .16); }
+            .preview-container { padding: 4px 0; }
+            .sheet { border-radius: 5px; box-shadow: 0 25px 60px rgba(0,0,0,.38); margin-bottom: 38px; }
+            .sheet::before { content: ''; position: absolute; inset: 0 0 auto; height: 4px; background: linear-gradient(90deg, #1f4c8e, #6aa9e9, #d4b4cb); }
+        }
+
+        @media screen and (max-width: 1050px) {
+            .workspace { flex-direction: column; padding: 24px 16px 42px; }
+            .control-panel { position: static; width: 100%; }
+            .preview-container { width: 100%; overflow-x: auto; align-items: flex-start; }
+            .sheet { transform-origin: top left; }
+        }
     </style>
 </head>
 <body>
