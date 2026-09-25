@@ -936,16 +936,8 @@
                 }
             }
 
-            // 5. Localiza a Quantidade Total de Peças pelo rodapé do bloco de orientação
-            for (let i = 0; i < lines.length; i++) {
-                const l = lines[i];
-                const totalMatch = l.match(/(?:Total\s+de\s+Peças|Total\s+Oficina|Total\s+Geral)[\s:]+([0-9]+)/i);
-                if (totalMatch) {
-                    qtdPecas = parseInt(totalMatch[1], 10);
-                    break;
-                }
-            }
-            if (qtdPecas === 0) qtdPecas = 1;
+            // A quantidade da OP é definida depois da leitura da grade, pois a
+            // primeira coluna de "Total de Peças" é um tamanho, não o total.
 
             // 6. Localiza todas as Matérias-Primas (Tecidos e Entretelas)
             for (let i = 0; i < lines.length; i++) {
@@ -1025,28 +1017,9 @@
                 }
             }
 
-            // Define grades padrão (tamanho único U = qtdPecas)
-            let gradesObj = { '34': '—', '36': '—', '38': '—', '40': '—', '42': '—', '44': '—', '46': '—', 'U': qtdPecas, 'total': qtdPecas };
-
-            // Se o relatório tiver a linha com múltiplos números de grade (ex: 34 a 46):
-            for (let i = 0; i < lines.length; i++) {
-                const l = lines[i];
-                if (/Total\s+de\s+Peças|Qtdes\s+Atuais/i.test(l)) {
-                    const nums = l.match(/\b\d+\b/g);
-                    if (nums && nums.length >= 7) {
-                        const nArr = nums.map(n => parseInt(n, 10));
-                        gradesObj['34'] = nArr[0] !== undefined ? nArr[0] : '—';
-                        gradesObj['36'] = nArr[2] !== undefined ? nArr[2] : (nArr[1] || '—');
-                        gradesObj['38'] = nArr[3] !== undefined ? nArr[3] : '—';
-                        gradesObj['40'] = nArr[4] !== undefined ? nArr[4] : '—';
-                        gradesObj['42'] = nArr[5] !== undefined ? nArr[5] : '—';
-                        gradesObj['44'] = nArr[6] !== undefined ? nArr[6] : '—';
-                        gradesObj['46'] = nArr[7] !== undefined ? nArr[7] : '—';
-                        gradesObj['U'] = '—';
-                        break;
-                    }
-                }
-            }
+            const gradeData = parseNormalizedGrade(lines, qtdPecas);
+            qtdPecas = gradeData.total;
+            const gradesObj = gradeData.grades;
 
             return {
                 op,
@@ -1055,13 +1028,49 @@
                 cor,
                 qtdPecas,
                 grades: gradesObj,
+                dynamicSizeHeaders: gradeData.headers,
                 materiais
             };
+        }
+
+        function normalizeGradeSize(value) {
+            const raw = String(value || '').toUpperCase().replace(/\s+/g, '');
+            const aliases = { 'XS':'PP','X':'PP','XP':'PP','PP':'PP','X/PP':'PP','XS/PP':'PP','S/PP':'PP','S':'P','P':'P','SP':'P','S/P':'P','M':'M','M/M':'M','L':'G','G':'G','LG':'G','L/G':'G','XL':'GG','GG':'GG','XG':'GG','XL/GG':'GG','U':'U','UNICA':'U','ÚNICA':'U' };
+            return aliases[raw] || (/^\d{1,3}$/.test(raw) ? raw : null);
+        }
+
+        function parseNormalizedGrade(lines, fallbackTotal) {
+            const fallback = fallbackTotal || 1;
+            const defaultResult = { headers: null, total: fallback, grades: { '34':'—','36':'—','38':'—','40':'—','42':'—','44':'—','46':'—','U':fallback,total:fallback } };
+            const headerIndex = lines.findIndex(line => /Qtdes\s+Atuais/i.test(line));
+            const valuesLine = lines.find(line => /Total\s+de\s+Peças/i.test(line));
+            if (headerIndex < 0 || !valuesLine) return defaultResult;
+            const rawHeaders = (lines[headerIndex].split(/Qtdes\s+Atuais/i)[1] || '').split(/\t+/).map(value => value.trim()).filter(value => value && value !== '*' && !/^Total\b/i.test(value));
+            const headers = rawHeaders.map(normalizeGradeSize).filter(Boolean);
+            const values = ((valuesLine.replace(/^.*?Total\s+de\s+Peças\s*/i, '').match(/\b\d+\b/g)) || []).map(Number);
+            if (!headers.length || values.length < headers.length) return defaultResult;
+            const grades = {};
+            headers.forEach((header, index) => grades[header] = (grades[header] || 0) + values[index]);
+            const total = Object.values(grades).reduce((sum, value) => sum + value, 0);
+            grades.total = total;
+            if (!Object.prototype.hasOwnProperty.call(grades, 'U')) grades.U = '—';
+            return { headers: [...new Set(headers)], total: total || fallback, grades };
         }
 
         // Carrega exemplo padrão
         function loadSampleTecidos() {
             location.reload();
+        }
+
+        function getDocumentGradeHeaders() {
+            const preferredOrder = ['PP', 'P', 'M', 'G', 'GG', '34', '36', '38', '40', '42', '44', '46', 'U'];
+            const found = new Set();
+            (tecidosData.ops || []).forEach(op => {
+                const headers = op.dynamicSizeHeaders || Object.keys(op.grades || {}).filter(key => key !== 'total' && op.grades[key] !== '—');
+                headers.forEach(header => found.add(header));
+            });
+            const ordered = preferredOrder.filter(header => found.has(header));
+            return ordered.length ? ordered : ['U'];
         }
 
         // RENDERIZAÇÃO DAS 3 PÁGINAS A4
@@ -1096,31 +1105,20 @@
                 `;
             });
 
+            const gradeHeaders = getDocumentGradeHeaders();
+            const gradeColumnWidth = (52 / (gradeHeaders.length + 1)).toFixed(2);
+            const gradeHeaderCells = gradeHeaders.map(header => `<th style="width: ${gradeColumnWidth}%;" class="center">${header}</th>`).join('');
             let gradeRows = '';
             tecidosData.ops.forEach(o => {
                 const g = o.grades || {};
-                const g34 = g['34'] !== undefined ? g['34'] : '—';
-                const g36 = g['36'] !== undefined ? g['36'] : '—';
-                const g38 = g['38'] !== undefined ? g['38'] : '—';
-                const g40 = g['40'] !== undefined ? g['40'] : '—';
-                const g42 = g['42'] !== undefined ? g['42'] : '—';
-                const g44 = g['44'] !== undefined ? g['44'] : '—';
-                const g46 = g['46'] !== undefined ? g['46'] : '—';
-                const gU = g['U'] !== undefined ? g['U'] : (o.qtdPecas || '—');
                 const gTot = g['total'] !== undefined ? g['total'] : (o.qtdPecas || 0);
+                const sizeCells = gradeHeaders.map(header => `<td class="center editable-cell"${header === 'U' ? ' style="font-weight: 800; background: rgba(59, 130, 246, 0.05);"' : ''}>${g[header] !== undefined ? g[header] : '—'}</td>`).join('');
 
                 gradeRows += `
                     <tr>
                         <td class="center editable-cell">${o.op}</td>
                         <td class="editable-cell">${o.referencia}</td>
-                        <td class="center editable-cell">${g34}</td>
-                        <td class="center editable-cell">${g36}</td>
-                        <td class="center editable-cell">${g38}</td>
-                        <td class="center editable-cell">${g40}</td>
-                        <td class="center editable-cell">${g42}</td>
-                        <td class="center editable-cell">${g44}</td>
-                        <td class="center editable-cell">${g46}</td>
-                        <td class="center editable-cell" style="font-weight: 800; background: rgba(59, 130, 246, 0.05);">${gU}</td>
+                        ${sizeCells}
                         <td class="center editable-cell" style="font-weight: 800;">${gTot}</td>
                     </tr>
                 `;
@@ -1218,15 +1216,8 @@
                             <tr>
                                 <th style="width: 11%;" class="center">OP</th>
                                 <th style="width: 37%;">REFERÊNCIA</th>
-                                <th style="width: 5.5%;" class="center">34</th>
-                                <th style="width: 5.5%;" class="center">36</th>
-                                <th style="width: 5.5%;" class="center">38</th>
-                                <th style="width: 5.5%;" class="center">40</th>
-                                <th style="width: 5.5%;" class="center">42</th>
-                                <th style="width: 5.5%;" class="center">44</th>
-                                <th style="width: 5.5%;" class="center">46</th>
-                                <th style="width: 6.5%;" class="center">U</th>
-                                <th style="width: 6.5%;" class="center">TOTAL</th>
+                                ${gradeHeaderCells}
+                                <th style="width: ${gradeColumnWidth}%;" class="center">TOTAL</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1572,11 +1563,13 @@
             doc.text('2. GRADE DAS REFERÊNCIAS', margin + 2, y + 3.2);
             y += 4.5;
 
-            const grW = [18, 70, 10, 10, 10, 10, 10, 10, 10, 14, 14];
+            const sizeKeys = getDocumentGradeHeaders();
+            const grValueW = (contentWidth - 88) / (sizeKeys.length + 1);
+            const grW = [18, 70, ...Array(sizeKeys.length + 1).fill(grValueW)];
             doc.setFillColor(...grayLight);
             doc.rect(margin, y, contentWidth, 4, 'FD');
             cx = margin;
-            ['OP', 'REFERÊNCIA', '34', '36', '38', '40', '42', '44', '46', 'U', 'TOTAL'].forEach((h, i) => {
+            ['OP', 'REFERÊNCIA', ...sizeKeys, 'TOTAL'].forEach((h, i) => {
                 doc.text(h, cx + (i === 1 ? 2 : grW[i] / 2), y + 3, { align: (i === 1 ? 'left' : 'center') });
                 cx += grW[i];
             });
@@ -1589,17 +1582,14 @@
                 doc.text(o.op, cx + grW[0] / 2, y + 3.2, { align: 'center' }); cx += grW[0];
                 doc.text(o.referencia.substring(0, 38), cx + 2, y + 3.2); cx += grW[1];
                 const g = o.grades || {};
-                const sizeKeys = ['34', '36', '38', '40', '42', '44', '46'];
-                for (let k = 2; k < 9; k++) {
-                    const val = g[sizeKeys[k - 2]] !== undefined ? String(g[sizeKeys[k - 2]]) : '—';
-                    doc.text(val, cx + grW[k] / 2, y + 3.2, { align: 'center' });
-                    cx += grW[k];
+                for (let k = 0; k < sizeKeys.length; k++) {
+                    const val = g[sizeKeys[k]] !== undefined ? String(g[sizeKeys[k]]) : '—';
+                    doc.text(val, cx + grW[k + 2] / 2, y + 3.2, { align: 'center' });
+                    cx += grW[k + 2];
                 }
-                const valU = g['U'] !== undefined ? String(g['U']) : (o.qtdPecas !== undefined ? String(o.qtdPecas) : '—');
                 doc.setFont('helvetica', 'bold');
-                doc.text(valU, cx + grW[9] / 2, y + 3.2, { align: 'center' }); cx += grW[9];
                 const valTot = g['total'] !== undefined ? String(g['total']) : String(o.qtdPecas || 0);
-                doc.text(valTot, cx + grW[10] / 2, y + 3.2, { align: 'center' });
+                doc.text(valTot, cx + grW[grW.length - 1] / 2, y + 3.2, { align: 'center' });
                 doc.setFont('helvetica', 'normal');
                 y += 4.5;
             });

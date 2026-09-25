@@ -937,88 +937,38 @@
                 }
             }
 
-            // 5. Quantidade total
-            for (let i = 0; i < lines.length; i++) {
-                const l = lines[i];
-                const totalMatch = l.match(/(?:Total\s+de\s+Peças|Total\s+Oficina|Total\s+Geral)[\s:]+([0-9]+)/i);
-                if (totalMatch) {
-                    qtdPecas = parseInt(totalMatch[1], 10);
-                    break;
-                }
-            }
-            if (qtdPecas === 0) qtdPecas = 1;
-
-            // 6. Grade Dinâmica
-            let gradesObj = { '34': '—', '36': '—', '38': '—', '40': '—', '42': '—', '44': '—', '46': '—', 'U': qtdPecas, 'total': qtdPecas };
-
-            // Procura header com tamanhos dinâmicos
-            for (let i = 0; i < lines.length; i++) {
-                const l = lines[i];
-                if (/Atuais/i.test(l) && (/Total|[*]/i.test(l))) {
-                    // Extrai tokens entre "Atuais" e "*" ou "Total"
-                    const afterAtuais = l.split(/Atuais/i)[1];
-                    if (afterAtuais) {
-                        const beforeEnd = afterAtuais.split(/[*]|Total/i)[0].trim();
-                        const sizeTokens = beforeEnd.split(/\s+/).filter(t => t.length > 0);
-                        
-                        if (sizeTokens.length >= 3) {
-                            // Converte XS/PP -> PP, S/P -> P, M/M -> M, L/G -> G, XL/GG -> GG
-                            const cleanSizes = sizeTokens.map(t => {
-                                if (t.includes('/')) {
-                                    return t.split('/').pop();
-                                }
-                                return t;
-                            });
-                            dynamicSizeHeaders = cleanSizes;
-
-                            // Agora busca a linha de valores (Total de Peças)
-                            for (let j = i + 1; j < lines.length; j++) {
-                                if (/Total\s+de\s+Peças/i.test(lines[j])) {
-                                    const nums = lines[j].match(/\b\d+\b/g);
-                                    if (nums) {
-                                        const nArr = nums.map(n => parseInt(n, 10));
-                                        // Cria grades dinâmicas
-                                        gradesObj = {};
-                                        cleanSizes.forEach((sz, idx) => {
-                                            gradesObj[sz] = idx < nArr.length ? nArr[idx] : '—';
-                                        });
-                                        // O total é o último número ou a soma
-                                        const totalIdx = nArr.length - 1;
-                                        gradesObj['total'] = nArr[totalIdx] || qtdPecas;
-                                        gradesObj['U'] = '—';
-                                    }
-                                    break;
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Fallback: tenta grade numérica padrão
-            if (!dynamicSizeHeaders) {
-                for (let i = 0; i < lines.length; i++) {
-                    const l = lines[i];
-                    if (/Total\s+de\s+Peças|Qtdes\s+Atuais/i.test(l)) {
-                        const nums = l.match(/\b\d+\b/g);
-                        if (nums && nums.length >= 7) {
-                            const nArr = nums.map(n => parseInt(n, 10));
-                            gradesObj['34'] = nArr[0] !== undefined ? nArr[0] : '—';
-                            gradesObj['36'] = nArr[1] !== undefined ? nArr[1] : '—';
-                            gradesObj['38'] = nArr[2] !== undefined ? nArr[2] : '—';
-                            gradesObj['40'] = nArr[3] !== undefined ? nArr[3] : '—';
-                            gradesObj['42'] = nArr[4] !== undefined ? nArr[4] : '—';
-                            gradesObj['44'] = nArr[5] !== undefined ? nArr[5] : '—';
-                            gradesObj['46'] = nArr[6] !== undefined ? nArr[6] : '—';
-                            gradesObj['U'] = '—';
-                            break;
-                        }
-                    }
-                }
-            }
+            // A linha "Total de Peças" contém primeiro a distribuição por
+            // tamanho. Nunca use o primeiro número dela como o total da OP.
+            const gradeData = parseNormalizedGrade(lines, qtdPecas);
+            qtdPecas = gradeData.total;
+            const gradesObj = gradeData.grades;
+            dynamicSizeHeaders = gradeData.headers;
 
             return { op, referencia, pedidos, cor, qtdPecas, grades: gradesObj, dynamicSizeHeaders };
+        }
+
+        function normalizeGradeSize(value) {
+            const raw = String(value || '').toUpperCase().replace(/\s+/g, '');
+            const aliases = { 'XS':'PP','X':'PP','XP':'PP','PP':'PP','X/PP':'PP','XS/PP':'PP','S/PP':'PP','S':'P','P':'P','SP':'P','S/P':'P','M':'M','M/M':'M','L':'G','G':'G','LG':'G','L/G':'G','XL':'GG','GG':'GG','XG':'GG','XL/GG':'GG','U':'U','UNICA':'U','ÚNICA':'U' };
+            return aliases[raw] || (/^\d{1,3}$/.test(raw) ? raw : null);
+        }
+
+        function parseNormalizedGrade(lines, fallbackTotal) {
+            const fallback = fallbackTotal || 1;
+            const defaultResult = { headers: null, total: fallback, grades: { '34':'—','36':'—','38':'—','40':'—','42':'—','44':'—','46':'—','U':fallback,total:fallback } };
+            const headerIndex = lines.findIndex(line => /Qtdes\s+Atuais/i.test(line));
+            const valuesLine = lines.find(line => /Total\s+de\s+Peças/i.test(line));
+            if (headerIndex < 0 || !valuesLine) return defaultResult;
+            const rawHeaders = (lines[headerIndex].split(/Qtdes\s+Atuais/i)[1] || '').split(/\t+/).map(value => value.trim()).filter(value => value && value !== '*' && !/^Total\b/i.test(value));
+            const headers = rawHeaders.map(normalizeGradeSize).filter(Boolean);
+            const values = ((valuesLine.replace(/^.*?Total\s+de\s+Peças\s*/i, '').match(/\b\d+\b/g)) || []).map(Number);
+            if (!headers.length || values.length < headers.length) return defaultResult;
+            const grades = {};
+            headers.forEach((header, index) => grades[header] = (grades[header] || 0) + values[index]);
+            const total = Object.values(grades).reduce((sum, value) => sum + value, 0);
+            grades.total = total;
+            if (!Object.prototype.hasOwnProperty.call(grades, 'U')) grades.U = '—';
+            return { headers: [...new Set(headers)], total: total || fallback, grades };
         }
 
         // ==========================================
